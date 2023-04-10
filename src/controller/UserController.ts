@@ -87,23 +87,15 @@ class UserController {
       })
       .where("userId = :userId", { userId: req.params.userId })
       .execute();
-    const data = await AppDataSource.manager.query( `SELECT 
-      userId,
-      firstName,
-      lastName,
-      phone,
-      userName,
-      email,
-      isDeleted,
-      isActive,
-      createdBy,
-      created_at,
-      updatedBy,
-      updated_at
-      FROM user 
-      WHERE userId = ${req.params.userId} AND isDeleted= false`);
-    if (data.length) {
-      return res.json(Template.success("Users Updated succesfully",data));
+      const userRepository = AppDataSource.getRepository(User);
+      const user =  await userRepository.find({
+        where : {
+          userId:req.params.userId,
+          isDeleted:false
+        }
+      })
+    if (user.length) {
+      return res.json(Template.success("Users Updated succesfully",user));
     }
     return res.status(401).json(Template.userNotFound());
   };
