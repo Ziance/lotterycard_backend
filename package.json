@@ -1,7 +1,7 @@
 {
   "name": "lautry-node",
   "version": "1.0.0",
-  "description": "securily Project:",
+  "description": "lautry Project:",
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
