@@ -1,7 +1,7 @@
 {
-  "name": "lautry-node",
+  "name": "lottery-node",
   "version": "1.0.0",
-  "description": "lautry Project:",
+  "description": "lottery Project:",
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",

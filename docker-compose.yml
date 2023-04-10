@@ -5,9 +5,8 @@ services:
     expose:
       - 3000
     depends_on:
-      - sftp
       - mysqldb
-    container_name: "securli_app"
+    container_name: "lottery_app"
     volumes:
       - .:/var/www/
     working_dir: /var/www/
@@ -19,32 +18,21 @@ services:
       DB_PORT: '3306'
       DB_USERNAME: 'admin'
       DB_PASSWORD: 'adminpw'
-      DB_DATABASE: 'securli'
+      DB_DATABASE: 'lottery'
       NODE_DOCKER_PORT: '3000'
-      SFTP_URL: 'sftp://administrator:Admin123@sftp'
-    networks:
-      - app-network
-  sftp:
-    image: atmoz/sftp
-    container_name: sftp_server
-    command: administrator:Admin123:::upload
-    volumes:
-      - mysftpdata:/home/administrator
-    ports:
-      - 2222:22
     networks:
       - app-network
   mysqldb:
     image: mysql
     expose:
       - 3306
-    container_name: 'securli-db'
+    container_name: 'lottery-db'
     command: --sql_mode=""
     environment:
       MYSQL_ROOT_PASSWORD: "rootpw"
       MYSQL_USER: "admin"
       MYSQL_PASSWORD: "adminpw"
-      MYSQL_DATABASE: "securli"
+      MYSQL_DATABASE: "lottery"
     volumes:
       - mysqldata:/var/lib/mysql
     ports:
@@ -56,4 +44,4 @@ networks:
     driver: bridge
 volumes:
   mysqldata:
-  mysftpdata:
+
