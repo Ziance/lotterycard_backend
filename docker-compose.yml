@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  app:
+    image: node:16-alpine
+    expose:
+      - 3000
+    depends_on:
+      - sftp
+      - mysqldb
+    container_name: "securli_app"
+    volumes:
+      - .:/var/www/
+    working_dir: /var/www/
+    command: npm start
+    ports:
+      - 3000:3000
+    environment:
+      DB_HOST: mysqldb
+      DB_PORT: '3306'
+      DB_USERNAME: 'admin'
+      DB_PASSWORD: 'adminpw'
+      DB_DATABASE: 'securli'
+      NODE_DOCKER_PORT: '3000'
+      SFTP_URL: 'sftp://administrator:Admin123@sftp'
+    networks:
+      - app-network
+  sftp:
+    image: atmoz/sftp
+    container_name: sftp_server
+    command: administrator:Admin123:::upload
+    volumes:
+      - mysftpdata:/home/administrator
+    ports:
+      - 2222:22
+    networks:
+      - app-network
+  mysqldb:
+    image: mysql
+    expose:
+      - 3306
+    container_name: 'securli-db'
+    command: --sql_mode=""
+    environment:
+      MYSQL_ROOT_PASSWORD: "rootpw"
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "adminpw"
+      MYSQL_DATABASE: "securli"
+    volumes:
+      - mysqldata:/var/lib/mysql
+    ports:
+      - 3306:3306
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
+volumes:
+  mysqldata:
+  mysftpdata:
