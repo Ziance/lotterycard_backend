@@ -7,21 +7,12 @@ import Template from "../response/index";
 class UserController {
   public static getUser = async (req: Request, res: Response) => {
     try {
-      const data = await AppDataSource.manager.query(`SELECT  
-      userId,
-      firstName,
-      lastName,
-      phone,
-      userName,
-      email,
-      isDeleted,
-      isActive,
-      createdBy,
-      created_at,
-      updatedBy,
-      updated_at
-      FROM user
-      WHERE isDeleted=false`);
+    const userRepository = AppDataSource.getRepository(User);
+    const data =  await userRepository.find({
+      where : {
+        isDeleted:false
+      }
+    })
       return res.json(Template.success("User Fetched Succesfully", data));
     } catch (error) {
       return res.status(401).json(Template.userNotFound());
@@ -30,23 +21,15 @@ class UserController {
   public static getUserById = async (req: Request, res: Response) => {
     try {
       let userId = req.params.userId;
-      const data = await AppDataSource.manager.query(`SELECT 
-      userId,
-      firstName,
-      lastName,
-      phone,
-      userName,
-      email,
-      isDeleted,
-      isActive,
-      createdBy,
-      created_at,
-      updatedBy,
-      updated_at
-      FROM user
-      WHERE userId = ${userId} AND isDeleted= false`);
-      if (data.length) {
-        return res.json(Template.success("Users Feated succesfully", data));
+      const userRepository = AppDataSource.getRepository(User);
+    const user =  await userRepository.find({
+      where : {
+        userId: userId,
+        isDeleted:false
+      }
+    })
+       if (user.length) {
+        return res.json(Template.success("Users Feated succesfully", user));
       }
       return res.status(401).json(Template.userNotFound());
     } catch (error) {
