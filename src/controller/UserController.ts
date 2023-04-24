@@ -55,7 +55,7 @@ class UserController {
         userName: userName.trim(),
         email: email,
         passwordHash: hashPassword,
-        isActive: isActive ? isActive : false,
+        isActive: isActive ? isActive : true,
         //createdBy: res.locals.jwt.userId,
       });
       const results = await AppDataSource.getRepository(User).save(user);
@@ -83,7 +83,7 @@ class UserController {
       .update(User)
       .set({
         ...req.body,
-        updatedBy: res.locals.jwt.userId,
+        // updatedBy: res.locals.jwt.userId,
       })
       .where("userId = :userId", { userId: req.params.userId })
       .execute();
