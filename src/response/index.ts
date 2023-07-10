@@ -63,21 +63,21 @@ const ResponseTemplate = {
   userNotFound(message?: any,code?: any) {
     return {
     Sataus: code || Err.UserNotFound,  
-    message: message || "the user you're looking for doesn't exist or you dont have permissions to access it.",
+    message: message || "User you're looking for doesn't exist or you dont have permissions to access it.",
     }
   },
   userAlreadyExist() {
     return ResponseTemplate.error(
-      "user with email already exist",
+      "User with email already exist",
       "User with same email already exist in System, please use another email",
       Err.EmailAlreadyExists
     );
   },
   userAlreadyInvited() {
     return ResponseTemplate.error(
-      "user with email already invited",
+      "User with email already invited",
       "User with same email already invited, Another link can be send after 24 hours window",
-      Err.DuplicateInvite
+      Err.DuplicateInvite 
     );
   },
   unauthorized(res:any) {

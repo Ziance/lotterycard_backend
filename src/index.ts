@@ -3,6 +3,7 @@ import express from "express";
 import AppDataSource from "./ormconfig";
 import { routes as apiRoutes } from "./routes/index";
 import bodyParser from "body-parser";
+import { job } from "./controller/CardController";
 
 // establish database connection
 AppDataSource.initialize()
@@ -20,6 +21,7 @@ app.use(cors({origin: "*"}));
 app.use("/", apiRoutes);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+job.start();
 // start express server
 const PORT = Number(process.env.NODE_DOCKER_PORT) || 3001;
 app.listen(PORT, () => {
