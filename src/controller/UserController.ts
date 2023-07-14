@@ -4,6 +4,7 @@ import { hashText } from "../helper/bcrypt";
 //import { sendEmail } from "../helper/emailHelper";
 import AppDataSource from "../ormconfig";
 import Template from "../response/index";
+import { Credit } from "../entity/Credit";
 class UserController {
   public static getUser = async (req: Request, res: Response) => {
     try {
@@ -60,6 +61,12 @@ class UserController {
       });
       const results = await AppDataSource.getRepository(User).save(user);
       delete results.passwordHash;
+      const creditsadd = AppDataSource.getRepository(Credit).create({
+        userId:user.userId,
+        credits:50,
+      })
+      creditsadd.credits + 50;
+      await AppDataSource.getRepository(Credit).save(creditsadd)
       //await sendEmail(email, "Welcome To lotry", "Welcome to lotry, continue using our application.");
      
       return res.json(Template.success("Users created succesfully", results));
