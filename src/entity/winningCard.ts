@@ -1,21 +1,15 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
-export class Winner {
+export class winningCard {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // @Column()
-  // userId : string;
+  @Column()
+  winnerCard : string;
 
   @Column()
   sessionId : number;
-
-  @Column()
-  winners:string;
-
-  @Column()
-  winnerBidCard:string;
 
   @CreateDateColumn({
     type: "timestamp",
