@@ -10,6 +10,7 @@ import { Winner } from "../entity/winner";
 import { Session } from "../entity/Session";
 import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
+import { Cards } from "../entity/Cards";
 class CardController {
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
@@ -50,11 +51,11 @@ class CardController {
       if (data.credits < 1) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
-      if (status.allowBid === 1) {
+      if (status.allowBid === 0) {
         data.credits -= 1;
         await AppDataSource.getRepository(Credit).save(data);
 
-        const addbidrecord = await AppDataSource.getRepository(Bid);
+        const addbidrecord = AppDataSource.getRepository(Bid);
         const bidData = await addbidrecord.findOne({
           where: {
             userId: user,
@@ -80,7 +81,6 @@ class CardController {
           createbid.userId = user;
           createbid.date = moment().utc().toDate();
           createbid.bidCard = req.body.card;
-          createbid.sessionId = session.seesionId;
           await AppDataSource.getRepository(Bid).save(createbid);
         }
         return res.json({
@@ -305,6 +305,75 @@ class CardController {
       res.json({ message: "error occured" });
     }
   };
+  // public static fetchcards = async (req: Request, res: Response) => {
+  //   try {
+  //     const cardDirectory = path.join(__dirname, "../card-images"); // Assumes your source code is located in the `src` directory
+  //     console.log(cardDirectory)
+  //     // Define the names of the card folders
+  //     const cardFolders = [
+  //       "ClubsCard",
+  //       "DiamondsCard",
+  //       "HeartsCard",
+  //       "JokerCard",
+  //       "SpadesCard",
+  //     ];
+
+  //     const imageCards = [];
+  //     const imagerepo = await AppDataSource.getRepository(Cards)
+  //     // Iterate over each card folder
+  //     for (const folderName of cardFolders) {
+  //       const folderPath = path.join(cardDirectory, folderName);
+
+  //       // Read the files from the card folder
+  //       const files = await fs.promises.readdir(folderPath);
+
+  //       // Filter only image files (you can adjust the file extensions as needed)
+  //       const imageFiles = files.filter((file) => {
+  //         const extension = path.extname(file).toLowerCase();
+  //         return [".jpg", ".jpeg", ".png"].includes(extension);
+  //       });
+
+  //         // Iterate over the image files in the folder
+  //     for (const fileName of imageFiles) {
+  //       // const imagePath = path.join(folderPath, fileName);
+
+  //       // Read the image file
+  //       // const imageBuffer = fs.readFileSync(imagePath);
+  //       const cardName = fileName.split('.').slice(0, -1).join('.');
+  //       // Create a new Card entity
+  //      const data = imagerepo.create({
+  //       card_name : cardName,
+  //       // card_type : imageBuffer,
+  //      })
+    
+  //       // Save the Card entity to the database
+  //      await AppDataSource.getRepository(Cards).save(data)
+  //     }
+  //     }
+  //      console.log('Images saved to the database!');
+  //   res.send('Images saved to the database!');
+  //     // res.json(imageCards);
+  //   } 
+  //   catch (error) {
+  //     console.log("An error occurred while retrieving the image cards:", error);
+  //     res
+  //       .status(500)
+  //       .send("An error occurred while retrieving the image cards.");
+  //   }
+  // };
+ 
+  public static getallcards =async (req:Request,res:Response) => {
+    try {
+      const cards =  AppDataSource.getRepository(Cards)
+      const data = await cards.find()
+      return res.status(200).json({ message : "data is ", data : data })
+    } catch (error) {
+      console.log(error)
+      res.status(500).json({
+        error: error
+      })
+    }
+  }
 }
 
 async function checkAndStoreWinner() {
@@ -372,19 +441,19 @@ async function checkAndStoreWinner() {
           `update session set allowBid = 0  where id = ${sessionId.id}`
         );
         const update = query1[0];
-          const startTime = new Date();
-          const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-          let sessionid = Math.floor(Math.random() * 100);
+        const startTime = new Date();
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+        let sessionid = Math.floor(Math.random() * 100);
 
-          const session = await AppDataSource.getRepository(Session).create({
-            sessionStartTime: startTime,
-            sessionEndTime: endTime,
-            allowBid: true,
-            seesionId: sessionid,
-          });
-           await AppDataSource.getRepository(Session).save(session);
-          console.log("Session data saved:", session);
-      
+        const session = await AppDataSource.getRepository(Session).create({
+          sessionStartTime: startTime,
+          sessionEndTime: endTime,
+          allowBid: true,
+          seesionId: sessionid,
+        });
+        await AppDataSource.getRepository(Session).save(session);
+        console.log("Session data saved:", session);
+
         return;
       }
       console.log("User details stored in the winner table:", savedWinner);
@@ -397,27 +466,13 @@ async function checkAndStoreWinner() {
 }
 
 function getRandomCard(): string {
-  const suits = ["Hearts", "Diamonds", "Clubs", "Spades"];
-  const values = [
-    "Ace",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "Jack",
-    "Queen",
-    "King",
-  ];
+  const suits = ["HEARTS", "DIAMONDS", "CLUBS", "SPADES"];
+  const values = [ "ACE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "JACK", "QUEEN", "KING" ];
 
   const randomSuit = suits[Math.floor(Math.random() * suits.length)];
   const randomValue = values[Math.floor(Math.random() * values.length)];
 
-  return `${randomValue} of ${randomSuit}`;
+  return `${randomValue}_OF_${randomSuit}`;
 }
 
 const winnningCard = async () => {
@@ -465,80 +520,17 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-// export const job = cron.schedule("* * * * *", () => {
-//   console.log("crone called at ", new Date().toUTCString());
-//   // winnningCard();
-//   storeSessionData();
-//   checkAndStoreWinner();
-// });
-
 export const cronjob = cron.schedule("0 * * * *", () => {
   console.log("crone called at ", new Date().toUTCString());
-  winnningCard();
-  storeSessionData();
-  checkAndStoreWinner();
+   winnningCard();
+   storeSessionData();
+   checkAndStoreWinner();
 });
+
+// export const cronjob2 = cron.schedule("0 * * * *", () => {
+//   console.log("crone called at ", new Date().toUTCString());
+//    winnningCard();
+//    storeSessionData();
+// });
 export default CardController;
 
-// const scheduleCronJob = async () =>  {
-//   console.log("session 1 =>",Session);
-//   console.log("winner 1 =>",Winner);
-//   try {
-
-//     const sessionRepo = AppDataSource.getRepository(Session);
-//     const sessions = await sessionRepo.find({
-//       order: {
-//         sessionEndTime: "DESC",
-//       },
-//       take: 1,
-//     });
-
-//     if (sessions.length > 0) {
-//       const sessionEndTime = sessions[0].sessionEndTime;
-
-//       const cronTime = new Date(sessionEndTime);
-//       cronTime.setHours(cronTime.getHours() + 1);
-//       cronTime.setSeconds(0); // Set seconds to 0
-
-//       cron.schedule(
-//         "0 " + cronTime.getMinutes() + " " + cronTime.getHours() + " * * *",
-//         async () => {
-//           try {
-
-//             // Retrieve session details from the database
-//             const sessionDetails = await sessionRepo.find({
-//               order: {
-//                 sessionEndTime: "DESC",
-//               },
-//               take: 1,
-//             });
-
-//             if (sessionDetails.length > 0) {
-//               const { sessionStartTime, seesionId } = sessionDetails[0];
-//               const sessionRepo = AppDataSource.getRepository(Session);
-//               const data = sessionRepo.create({
-//                 sessionStartTime: sessionStartTime,
-//                 sessionEndTime: sessionEndTime,
-//                 seesionId: seesionId,
-//               });
-
-//               await AppDataSource.getRepository(Session).save(data);
-//               console.log("Session details stored successfully.");
-//             } else {
-//               console.error("No session details found.");
-//             }
-//           } catch (error) {
-//             console.error("Error:", error.message);
-//           }
-//         }
-//       );
-//     } else {
-//       throw new Error("No session end time found.");
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     console.error("Error++++++++++++:", error.message);
-//   }
-// }
-
-// scheduleCronJob();
