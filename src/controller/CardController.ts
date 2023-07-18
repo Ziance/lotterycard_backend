@@ -345,7 +345,7 @@ class CardController {
   //       card_name : cardName,
   //       // card_type : imageBuffer,
   //      })
-    
+
   //       // Save the Card entity to the database
   //      await AppDataSource.getRepository(Cards).save(data)
   //     }
@@ -353,7 +353,7 @@ class CardController {
   //      console.log('Images saved to the database!');
   //   res.send('Images saved to the database!');
   //     // res.json(imageCards);
-  //   } 
+  //   }
   //   catch (error) {
   //     console.log("An error occurred while retrieving the image cards:", error);
   //     res
@@ -361,19 +361,19 @@ class CardController {
   //       .send("An error occurred while retrieving the image cards.");
   //   }
   // };
- 
-  public static getallcards =async (req:Request,res:Response) => {
+
+  public static getallcards = async (req: Request, res: Response) => {
     try {
-      const cards =  AppDataSource.getRepository(Cards)
-      const data = await cards.find()
-      return res.status(200).json({ message : "data is ", data : data })
+      const cards = AppDataSource.getRepository(Cards);
+      const data = await cards.find();
+      return res.status(200).json({ message: "data is ", data: data });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       res.status(500).json({
-        error: error
-      })
+        error: error,
+      });
     }
-  }
+  };
 }
 
 async function checkAndStoreWinner() {
@@ -438,20 +438,20 @@ async function checkAndStoreWinner() {
         );
         console.log(query);
         const sessionId = query[0];
-        const query1 = `update session set allowBid = 0  where id = ${sessionId.id}`
+        const query1 = `update session set allowBid = 0  where id = ${sessionId.id}`;
         const result1 = await AppDataSource.query(query1);
-        console.log("update query", query1)
-        // const update = query1; 
+        console.log("update query", query1);
+        // const update = query1;
         const startTime = new Date();
         const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
         let sessionid = Math.floor(Math.random() * 100);
 
         const session = await AppDataSource.getRepository(Session).create();
-        session.sessionStartTime =  startTime,
-          session.sessionEndTime = endTime,
-          session.allowBid = true,
-          session.seesionId = sessionid,
-        await AppDataSource.getRepository(Session).save(session);
+        (session.sessionStartTime = startTime),
+          (session.sessionEndTime = endTime),
+          (session.allowBid = true),
+          (session.seesionId = sessionid),
+          await AppDataSource.getRepository(Session).save(session);
         console.log("Session data saved:", session);
 
         return;
@@ -467,7 +467,21 @@ async function checkAndStoreWinner() {
 
 function getRandomCard(): string {
   const suits = ["HEARTS", "DIAMONDS", "CLUBS", "SPADES"];
-  const values = [ "ACE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "JACK", "QUEEN", "KING" ];
+  const values = [
+    "ACE",
+    "TWO",
+    "THREE",
+    "FOUR",
+    "FIVE",
+    "SIX",
+    "SEVEN",
+    "EIGHT",
+    "NINE",
+    "TEN",
+    "JACK",
+    "QUEEN",
+    "KING",
+  ];
 
   const randomSuit = suits[Math.floor(Math.random() * suits.length)];
   const randomValue = values[Math.floor(Math.random() * values.length)];
@@ -510,9 +524,9 @@ async function storeSessionData(): Promise<void> {
       allowBid: allowBid,
       seesionId: sessionid,
     });
-   const test =  await AppDataSource.getRepository(Session).save(session);
+    const test = await AppDataSource.getRepository(Session).save(session);
     console.log("Session data saved:", session);
-    console.log("done",test)
+    console.log("done", test);
     // });
 
     console.log("Session data storage initialized.");
@@ -521,11 +535,11 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-export const cronjob = cron.schedule("* * * * *", () => {
+export const cronjob = cron.schedule("0 * * * *", () => {
   console.log("crone called at ", new Date().toUTCString());
-  //  winnningCard();
-  //   storeSessionData();
-  //  checkAndStoreWinner();
+  winnningCard();
+  storeSessionData();
+  checkAndStoreWinner();
 });
 
 // export const cronjob2 = cron.schedule("0 * * * *", () => {
@@ -534,4 +548,3 @@ export const cronjob = cron.schedule("* * * * *", () => {
 //    storeSessionData();
 // });
 export default CardController;
-
