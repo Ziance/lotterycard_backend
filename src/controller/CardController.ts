@@ -25,7 +25,7 @@ class CardController {
         },
       });
       const query = await AppDataSource.query(
-        "SELECT * FROM lautry.session ORDER BY sessionEndTime DESC LIMIT 1"
+        "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
       if (query.length === 0) {
         console.log("Bidding are close.");
@@ -51,7 +51,7 @@ class CardController {
       if (data.credits < 1) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
-      if (status.allowBid === 0) {
+      if (status.allowBid === 1) {
         data.credits -= 1;
         await AppDataSource.getRepository(Credit).save(data);
 
@@ -401,6 +401,7 @@ async function checkAndStoreWinner() {
     const query2 = await AppDataSource.query(
       "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
     );
+
     if (query2.length === 0) {
       // console.log("No session found in the database.");
       return;
@@ -409,7 +410,7 @@ async function checkAndStoreWinner() {
     // console.log("session id :", sessionId);
 
     const query3 = await AppDataSource.query(
-      `SELECT * FROM lautry.bid where bidCard = '${winCard.winnerCard}'`
+      `SELECT * FROM bid where bidCard = '${winCard.winnerCard}'`
     );
     if (query3.length === 0) {
       console.log("no user winning");
@@ -433,24 +434,23 @@ async function checkAndStoreWinner() {
       );
       if (savedWinner) {
         const query = await AppDataSource.query(
-          "SELECT * FROM lautry.session ORDER BY sessionEndTime DESC LIMIT 1"
+          "SELECT * FROM session ORDER BY date(sessionEndTime) DESC LIMIT 1"
         );
         console.log(query);
         const sessionId = query[0];
-        const query1 = await AppDataSource.query(
-          `update session set allowBid = 0  where id = ${sessionId.id}`
-        );
-        const update = query1[0];
+        const query1 = `update session set allowBid = 0  where id = ${sessionId.id}`
+        const result1 = await AppDataSource.query(query1);
+        console.log("update query", query1)
+        // const update = query1; 
         const startTime = new Date();
         const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
         let sessionid = Math.floor(Math.random() * 100);
 
-        const session = await AppDataSource.getRepository(Session).create({
-          sessionStartTime: startTime,
-          sessionEndTime: endTime,
-          allowBid: true,
-          seesionId: sessionid,
-        });
+        const session = await AppDataSource.getRepository(Session).create();
+        session.sessionStartTime =  startTime,
+          session.sessionEndTime = endTime,
+          session.allowBid = true,
+          session.seesionId = sessionid,
         await AppDataSource.getRepository(Session).save(session);
         console.log("Session data saved:", session);
 
@@ -510,8 +510,9 @@ async function storeSessionData(): Promise<void> {
       allowBid: allowBid,
       seesionId: sessionid,
     });
-    await AppDataSource.getRepository(Session).save(session);
+   const test =  await AppDataSource.getRepository(Session).save(session);
     console.log("Session data saved:", session);
+    console.log("done",test)
     // });
 
     console.log("Session data storage initialized.");
@@ -520,11 +521,11 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-export const cronjob = cron.schedule("0 * * * *", () => {
+export const cronjob = cron.schedule("* * * * *", () => {
   console.log("crone called at ", new Date().toUTCString());
-   winnningCard();
-   storeSessionData();
-   checkAndStoreWinner();
+  //  winnningCard();
+  //   storeSessionData();
+  //  checkAndStoreWinner();
 });
 
 // export const cronjob2 = cron.schedule("0 * * * *", () => {
