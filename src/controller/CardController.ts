@@ -98,6 +98,54 @@ class CardController {
       return res.status(500).json({ error: "Internal server error" });
     }
   };
+
+
+
+  public static addMoreCredits = async (req: Request, res: Response) => {
+    const userid = req.params.userId;
+
+    if (!userid) {
+      return res.status(400).json({ error: "User parameter is missing" });
+    }
+    try {
+
+      const creditdata = AppDataSource.getRepository(Credit);
+      const data = await creditdata.findOne({
+        where: {
+          userId: userid,
+        },
+      })
+      let existingCredit= data?.credits
+      if (!data) {
+        
+      }
+      const creditsRepository= await AppDataSource.getRepository(Credit)
+      .createQueryBuilder()
+      .update({credits: existingCredit+ Number(53)})
+      .where("userId = :userId", { userId: userid })
+      .execute();
+      
+      if (creditsRepository) {
+        return res.status(200).json({message:"53 credits are added"})
+      }else{
+        return res.status(400).json({message:"credits are not added"})
+      }
+      // const update = await creditsRepository
+      // const addCredit = data.userId
+      // if (!data) {
+      //   console.log(data);
+      //   return res.status(404).json(Template.userNotFound());
+      // } else {
+      //   return res.json({
+      //     message: "User Credits is",
+      //     data,
+      //   });
+      // }
+    } catch (error) {
+      console.error("Failed to add credit:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
   public static getCredits = async (req: Request, res: Response) => {
     const userid = req.params.userId;
 
