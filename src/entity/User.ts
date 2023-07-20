@@ -55,6 +55,9 @@ export class User {
   })
   public updated_at: Date;
 
+  @Column()
+  credits?:number
+
   @Column({ default: false })
   isDeleted: boolean;
 

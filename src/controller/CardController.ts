@@ -1,6 +1,5 @@
-import { Request, Response, response } from "express";
+import { Request, Response } from "express";
 import AppDataSource from "../ormconfig";
-import { Credit } from "../entity/Credit";
 import { Bid } from "../entity/Bid";
 import moment from "moment";
 import Template from "../response/index";
@@ -18,89 +17,57 @@ class CardController {
       return res.status(400).json({ error: "User parameter is missing" });
     }
     try {
-      const existingUser = AppDataSource.getRepository(Credit);
-      const data = await existingUser.findOne({
+      const existingUser = AppDataSource.getRepository(User);
+      const userData = await existingUser.findOne({
         where: {
           userId: user,
         },
       });
-      const query = await AppDataSource.query(
-        "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
-      );
-      if (query.length === 0) {
-        console.log("Bidding are close.");
-        return;
-      }
-      const status = query[0];
-
-      const query2 = await AppDataSource.query(
-        "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
-      );
-      if (query2.length === 0) {
-        // console.log("No session found in the database.");
-        return;
-      }
-      const session = query2[0];
-      console.log(session.seesionId);
-      // console.log("session id :", sessionId);
-
-      if (!data) {
+      if(!userData){
         return res.status(401).json(Template.userNotFound());
       }
+      const sessionCheck = await AppDataSource.query( "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1");
+      if (sessionCheck.length === 0 || sessionCheck.length && sessionCheck[0].allowBid !== 1 ) {
+        return res.status(401).json({
+          message:"bidding are close"
+        }) 
+      }
 
-      if (data.credits < 1) {
+      if (userData.credits === 0) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
-      if (status.allowBid === 1) {
-        data.credits -= 1;
-        await AppDataSource.getRepository(Credit).save(data);
 
-        const addbidrecord = AppDataSource.getRepository(Bid);
-        const bidData = await addbidrecord.findOne({
-          where: {
-            userId: user,
-          },
-        });
-        if (bidData) {
-          const storedDate = moment(bidData.date).utc();
-          const inputDate = moment().utc();
-          if (
-            bidData &&
-            storedDate.isBefore(inputDate) &&
-            bidData.userId == user
-          ) {
-            return res.json({
-              message: "You have alredy placed the bid wait for the results",
-            });
-          }
-          bidData.userId = user;
-          bidData.date = moment().utc().toDate();
-          await AppDataSource.getRepository(Bid).save(bidData);
-        } else {
-          const createbid = await AppDataSource.getRepository(Bid).create();
-          createbid.userId = user;
-          createbid.date = moment().utc().toDate();
-          createbid.bidCard = req.body.card;
-          await AppDataSource.getRepository(Bid).save(createbid);
-        }
+      const addbidrecord = AppDataSource.getRepository(Bid);
+      const bidData = await addbidrecord.findOne({
+        where: {
+          userId: user,
+        },
+      });
+      if(bidData){
         return res.json({
-          message: "Bid placed successfully",
-          newCredit: data.credits,
-        });
-      } else {
-        console.log("Bidding are closed");
-        return res.json({
-          message: "Bidding are closed",
-        });
+          message: "You have alredy placed the bid wait for the results"
+        })
       }
+
+      const createbid = await AppDataSource.getRepository(Bid).create();
+      createbid.userId = user;
+      createbid.date = moment().utc().toDate();
+      createbid.bidCard = req.body.card;
+      createbid.sessionId = sessionCheck[0].seesionId;
+      await AppDataSource.getRepository(Bid).save(createbid);
+
+      userData.credits -= 1;
+      await AppDataSource.getRepository(User).save(userData);
+      return res.status(200).json({
+          message: "Bid placed successfully",
+          newCredit :userData.credits
+      })
+
     } catch (error) {
       console.error("Failed to place bid:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   };
-
-
-
   public static addMoreCredits = async (req: Request, res: Response) => {
     const userid = req.params.userId;
 
@@ -109,7 +76,7 @@ class CardController {
     }
     try {
 
-      const creditdata = AppDataSource.getRepository(Credit);
+      const creditdata = AppDataSource.getRepository(User);
       const data = await creditdata.findOne({
         where: {
           userId: userid,
@@ -118,7 +85,7 @@ class CardController {
 
       let existingCredit = data?.credits;
 
-      const creditsRepository= await AppDataSource.getRepository(Credit)
+      const creditsRepository= await AppDataSource.getRepository(User)
       .createQueryBuilder()
       .update({credits: existingCredit+ Number(53)})
       .where("userId = :userId", { userId: userid })
@@ -132,33 +99,6 @@ class CardController {
      
     } catch (error) {
       console.error("Failed to add credit:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  };
-  public static getCredits = async (req: Request, res: Response) => {
-    const userid = req.params.userId;
-
-    if (!userid) {
-      return res.status(400).json({ error: "User parameter is missing" });
-    }
-    try {
-      const creditsRepository = AppDataSource.getRepository(Credit);
-      const data = await creditsRepository.findOne({
-        where: {
-          userId: userid,
-        },
-      });
-      if (!data) {
-        console.log(data);
-        return res.status(404).json(Template.userNotFound());
-      } else {
-        return res.json({
-          message: "User Credits is",
-          data,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to place bid:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   };
@@ -342,63 +282,6 @@ class CardController {
       res.json({ message: "error occured" });
     }
   };
-  // public static fetchcards = async (req: Request, res: Response) => {
-  //   try {
-  //     const cardDirectory = path.join(__dirname, "../card-images"); // Assumes your source code is located in the `src` directory
-  //     console.log(cardDirectory)
-  //     // Define the names of the card folders
-  //     const cardFolders = [
-  //       "ClubsCard",
-  //       "DiamondsCard",
-  //       "HeartsCard",
-  //       "JokerCard",
-  //       "SpadesCard",
-  //     ];
-
-  //     const imageCards = [];
-  //     const imagerepo = await AppDataSource.getRepository(Cards)
-  //     // Iterate over each card folder
-  //     for (const folderName of cardFolders) {
-  //       const folderPath = path.join(cardDirectory, folderName);
-
-  //       // Read the files from the card folder
-  //       const files = await fs.promises.readdir(folderPath);
-
-  //       // Filter only image files (you can adjust the file extensions as needed)
-  //       const imageFiles = files.filter((file) => {
-  //         const extension = path.extname(file).toLowerCase();
-  //         return [".jpg", ".jpeg", ".png"].includes(extension);
-  //       });
-
-  //         // Iterate over the image files in the folder
-  //     for (const fileName of imageFiles) {
-  //       // const imagePath = path.join(folderPath, fileName);
-
-  //       // Read the image file
-  //       // const imageBuffer = fs.readFileSync(imagePath);
-  //       const cardName = fileName.split('.').slice(0, -1).join('.');
-  //       // Create a new Card entity
-  //      const data = imagerepo.create({
-  //       card_name : cardName,
-  //       // card_type : imageBuffer,
-  //      })
-
-  //       // Save the Card entity to the database
-  //      await AppDataSource.getRepository(Cards).save(data)
-  //     }
-  //     }
-  //      console.log('Images saved to the database!');
-  //   res.send('Images saved to the database!');
-  //     // res.json(imageCards);
-  //   }
-  //   catch (error) {
-  //     console.log("An error occurred while retrieving the image cards:", error);
-  //     res
-  //       .status(500)
-  //       .send("An error occurred while retrieving the image cards.");
-  //   }
-  // };
-
   public static getallcards = async (req: Request, res: Response) => {
     try {
       const cards = AppDataSource.getRepository(Cards);
@@ -548,8 +431,6 @@ const winnningCard = async () => {
 async function storeSessionData(): Promise<void> {
   try {
     console.log("in session ");
-    // Set up the cron job 0 for one hour
-    // cron.schedule('* * * * *', async () => {
     const startTime = new Date();
     const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
     const allowBid = true;
@@ -564,7 +445,7 @@ async function storeSessionData(): Promise<void> {
     const test = await AppDataSource.getRepository(Session).save(session);
     console.log("Session data saved:", session);
     console.log("done", test);
-    // });
+    
 
     console.log("Session data storage initialized.");
   } catch (error) {
@@ -579,9 +460,4 @@ export const cronjob = cron.schedule("0 * * * *", () => {
   checkAndStoreWinner();
 });
 
-// export const cronjob2 = cron.schedule("0 * * * *", () => {
-//   console.log("crone called at ", new Date().toUTCString());
-//    winnningCard();
-//    storeSessionData();
-// });
 export default CardController;
