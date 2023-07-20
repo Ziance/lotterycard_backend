@@ -12,5 +12,5 @@ router.post("/createUserBidHistory", CardController.createUserBidHistory)
 router.get ("/getUserBidHistory/:userId", CardController.getUserBidHistory)
 // router.get("/getcards", CardController.fetchcards)
 router.get("/getcards",CardController.getallcards)
-router.post("/getCreditsByUserId/:userId",CardController.addMoreCredits)
+router.post("/addCredits/:userId",CardController.addMoreCredits)
 export default router;
