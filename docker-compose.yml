@@ -3,7 +3,7 @@ services:
   app:
     image: node:16-alpine
     expose:
-      - 6000
+      - 3001
     depends_on:
       - mysqldb
     container_name: "lottery_app"

@@ -124,50 +124,48 @@ class CardController {
     try {
       const winnerRepository = AppDataSource.getRepository(Winner);
       const data = await winnerRepository.find();
-      // console.log(data)
-      const currentTime = new Date();
-
-      // Calculate the start time for the previous one hour
-      const oneHourAgo = new Date(currentTime.getTime() - 60 * 60 * 1000);
-
-      // Calculate the start time for the previous two hours
-      const twoHoursAgo = new Date(currentTime.getTime() - 2 * 60 * 60 * 1000);
-
-      // Filter the data based on the timestamp
-      const previousOneHourData = data.filter(
-        (item) =>
-          item.created_at >= oneHourAgo && item.created_at <= currentTime
-      );
-      const previousTwoHoursData = data.filter(
-        (item) =>
-          item.created_at >= twoHoursAgo && item.created_at <= currentTime
-      );
       if (!data.length) {
-        return res
-          .status(404)
-          .json({ error: "Winner is not declare yet try after some time" });
-      }
-      if (!previousOneHourData) {
-        console.log(data);
-        return res
-          .status(404)
-          .json({ error: "No winner data found in perivious one hour" });
-      } else if (!previousTwoHoursData) {
-        return res
-          .status(404)
-          .json({ error: "No winner data found in perivious second hour" });
-      }
-      if (previousOneHourData.length) {
-        return res.json({
-          message: "Winner data is",
-          previousOneHourData,
-        });
-      } else {
-        return res.json({
-          message: "Winner data is",
-          previousTwoHoursData,
+        return res.status(404).json({
+          error : "Winner is not declare yet try after some time or No winner found"
         });
       }
+        return res.status(200).json({
+          message: "Winner data is",
+          data,
+        });
+      // console.log(data)
+      // const currentTime = new Date();
+
+      // // Calculate the start time for the previous one hour
+      // const oneHourAgo = new Date(currentTime.getTime() - 60 * 60 * 1000);
+
+      // // Calculate the start time for the previous two hours
+      // const twoHoursAgo = new Date(currentTime.getTime() - 2 * 60 * 60 * 1000);
+
+      // // Filter the data based on the timestamp
+      // const previousOneHourData = data.filter(
+      //   (item) =>
+      //     item.created_at >= oneHourAgo && item.created_at <= currentTime
+      // );
+      // const previousTwoHoursData = data.filter(
+      //   (item) =>
+      //     item.created_at >= twoHoursAgo && item.created_at <= currentTime
+      // );
+      // if (!data.length) {
+      //   return res
+      //     .status(404)
+      //     .json({ error: "Winner is not declare yet try after some time" });
+      // }
+      // if (!previousOneHourData) {
+      //   console.log(data);
+      //   return res
+      //     .status(404)
+      //     .json({ error: "No winner data found in perivious one hour" });
+      // } else if (!previousTwoHoursData) {
+      //   return res
+      //     .status(404)
+      //     .json({ error: "No winner data found in perivious second hour" });
+      // }
     } catch (error) {
       console.error("Failed to place bid:", error);
       return res.status(500).json({ error: "Internal server error" });
