@@ -23,14 +23,19 @@ class CardController {
           userId: user,
         },
       });
-      if(!userData){
+      if (!userData) {
         return res.status(401).json(Template.userNotFound());
       }
-      const sessionCheck = await AppDataSource.query( "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1");
-      if (sessionCheck.length === 0 || sessionCheck.length && sessionCheck[0].allowBid !== 1 ) {
+      const sessionCheck = await AppDataSource.query(
+        "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
+      );
+      if (
+        sessionCheck.length === 0 ||
+        (sessionCheck.length && sessionCheck[0].allowBid !== 1)
+      ) {
         return res.status(401).json({
-          message:"bidding are close"
-        }) 
+          message: "bidding are close",
+        });
       }
 
       if (userData.credits === 0) {
@@ -43,10 +48,10 @@ class CardController {
           userId: user,
         },
       });
-      if(bidData){
+      if (bidData) {
         return res.json({
-          message: "You have alredy placed the bid wait for the results"
-        })
+          message: "You have alredy placed the bid wait for the results",
+        });
       }
 
       const createbid = await AppDataSource.getRepository(Bid).create();
@@ -59,10 +64,9 @@ class CardController {
       userData.credits -= 1;
       await AppDataSource.getRepository(User).save(userData);
       return res.status(200).json({
-          message: "Bid placed successfully",
-          newCredit :userData.credits
-      })
-
+        message: "Bid placed successfully",
+        newCredit: userData.credits,
+      });
     } catch (error) {
       console.error("Failed to place bid:", error);
       return res.status(500).json({ error: "Internal server error" });
@@ -75,7 +79,6 @@ class CardController {
       return res.status(400).json({ error: "User parameter is missing" });
     }
     try {
-
       const creditdata = AppDataSource.getRepository(User);
       const data = await creditdata.findOne({
         where: {
@@ -85,21 +88,54 @@ class CardController {
 
       let existingCredit = data?.credits;
 
-      const creditsRepository= await AppDataSource.getRepository(User)
-      .createQueryBuilder()
-      .update({credits: existingCredit+ Number(53)})
-      .where("userId = :userId", { userId: userid })
-      .execute();
+      const creditsRepository = await AppDataSource.getRepository(User)
+        .createQueryBuilder()
+        .update({ credits: existingCredit + Number(53) })
+        .where("userId = :userId", { userId: userid })
+        .execute();
 
       if (creditsRepository) {
-        return res.status(200).json({message:"53 credits are added"})
-      }else{
-        return res.status(400).json({message:"credits are not added"})
+        return res.status(200).json({ message: "53 credits are added" });
+      } else {
+        return res.status(400).json({ message: "credits are not added" });
       }
-     
     } catch (error) {
       console.error("Failed to add credit:", error);
       return res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  public static changeCards = async (req: Request, res: Response) => {
+    const userid = req.params.userId;
+    if (!userid) {
+      return res.status(400).json({ error: "User parameter is missing" });
+    }
+    try {
+      const creditdata = AppDataSource.getRepository(User);
+      const data = await creditdata.findOne({
+        where: {
+          userId: userid,
+        },
+      });
+      if (!data) {
+        return res.status(404).json({
+          message: "User not found please check",
+        });
+      }
+      const query = `update bid set bidCard = '${req.body.Card}' where userId = '${data.userId}'`;
+      const queryResult = await AppDataSource.query(query);
+      if (queryResult.length === 0) {
+        console.log("No bid card found in the database.");
+        return;
+      }
+      return res.status(200).json({
+        message: "Card Updated Successfully",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        message: "Internal server eroor",
+        error: error,
+      });
     }
   };
   public static getBid = async (req: Request, res: Response) => {
@@ -126,13 +162,14 @@ class CardController {
       const data = await winnerRepository.find();
       if (!data.length) {
         return res.status(404).json({
-          error : "Winner is not declare yet try after some time or No winner found"
+          error:
+            "Winner is not declare yet try after some time or No winner found",
         });
       }
-        return res.status(200).json({
-          message: "Winner data is",
-          data,
-        });
+      return res.status(200).json({
+        message: "Winner data is",
+        data,
+      });
       // console.log(data)
       // const currentTime = new Date();
 
@@ -443,7 +480,6 @@ async function storeSessionData(): Promise<void> {
     const test = await AppDataSource.getRepository(Session).save(session);
     console.log("Session data saved:", session);
     console.log("done", test);
-    
 
     console.log("Session data storage initialized.");
   } catch (error) {
