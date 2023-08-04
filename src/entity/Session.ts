@@ -8,7 +8,7 @@ export class Session {
   @Column()
   seesionId: number;
 
-  @Column({ type: "timestamp" })
+  @Column({ type: "timestamp" , default:null})
   sessionStartTime: Date;
 
   @Column({ type: "timestamp" })
