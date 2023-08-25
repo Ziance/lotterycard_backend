@@ -8,10 +8,10 @@ export class Session {
   @Column()
   seesionId: number;
 
-  @Column({ type: "timestamp" , default:null})
+  @Column({ type: "timestamp", default: null })
   sessionStartTime: Date;
 
-  @Column({ type: "timestamp" })
+  @Column({ type: "timestamp", default: null })
   sessionEndTime: Date;
 
   @Column({ type: "boolean", default: true })
