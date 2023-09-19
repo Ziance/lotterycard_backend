@@ -13,26 +13,38 @@ import { Cards } from "../entity/Cards";
 class CardController {
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
+    console.log("step1 : ", user)
     if (!user) {
       return res.status(400).json({ error: "User parameter is missing" });
     }
+    console.log("step2 : ", user)
     try {
       const existingUser = AppDataSource.getRepository(User);
+      console.log("step3 : ", existingUser)
+
       const userData = await existingUser.findOne({
         where: {
           userId: user,
         },
       });
+      console.log("step4 : ", userData)
+
       if (!userData) {
         return res.status(401).json(Template.userNotFound());
       }
+      console.log("step5 : ", userData)
+
       const sessionCheck = await AppDataSource.query(
         "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
+      console.log("step6 : ", sessionCheck)
+      
+
       if (
         sessionCheck.length === 0 ||
         (sessionCheck.length && sessionCheck[0].allowBid !== 1)
       ) {
+        console.log("step7 : ", sessionCheck)
         return res.status(401).json({
           message: "bidding are close",
         });
@@ -41,6 +53,8 @@ class CardController {
       if (userData.credits === 0) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
+      
+      console.log("step8 : ", userData?.credits)
 
       const addbidrecord = AppDataSource.getRepository(Bid);
       const bidData = await addbidrecord.findOne({

@@ -13,6 +13,8 @@ class AuthController {
   static login = async (req: Request, res: Response) => {
     //Check if username and password are set
     let { userName, password } = req.body;
+    console.log("requestttt", req.body);
+    
     if (!(userName && password)) {
       return res.status(400).json({ message: "Username and password required" });
     }
