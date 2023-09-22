@@ -11,6 +11,7 @@ import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
 import { Cards } from "../entity/Cards";
 class CardController {
+
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
     console.log("step1 : ", user)
@@ -38,7 +39,7 @@ class CardController {
         "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
       console.log("step6 : ", sessionCheck)
-      
+
 
       if (
         sessionCheck.length === 0 ||
@@ -53,17 +54,17 @@ class CardController {
       if (userData.credits === 0) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
-      
-      console.log("step8 : ", userData?.credits)
 
       const addbidrecord = AppDataSource.getRepository(Bid);
+
       const bidData = await addbidrecord.findOne({
         where: {
           userId: user,
         },
       });
+
       if (bidData) {
-        return res.json({
+        return res.status(409).json({
           message: "You have alredy placed the bid wait for the results",
         });
       }
@@ -77,6 +78,17 @@ class CardController {
 
       userData.credits -= 1;
       await AppDataSource.getRepository(User).save(userData);
+
+      const bidHistory = await AppDataSource.getRepository(UserBidHistory).create(
+        {
+          userId: user,
+          bidCard: req.body.card,
+          date: new Date(),
+          bidStatus: false
+        }
+      );
+      await AppDataSource.getRepository(UserBidHistory).save(bidHistory);
+
       return res.status(200).json({
         message: "Bid placed successfully",
         newCredit: userData.credits,
@@ -222,99 +234,7 @@ class CardController {
       return res.status(500).json({ error: "Internal server error" });
     }
   };
-  public static createUserBidHistory = async (req: Request, res: Response) => {
-    const { userId, bidCard, date } = req.body;
-    console.log("req", date);
-
-    try {
-      const winCard = await AppDataSource.getRepository(Winner);
-      const winResponse = await winCard.find({
-        where: {
-          created_at: date,
-          // userId:userId
-        },
-      });
-      console.log("win response ===========>", winResponse);
-      const response = await AppDataSource.getRepository(UserBidHistory).create(
-        {
-          userId: userId,
-          bidCard: bidCard,
-          date: date,
-          bidStatus: winResponse.length > 0 ? true : false,
-        }
-      );
-      const results = await AppDataSource.getRepository(UserBidHistory).save(
-        response
-      );
-      if (results) {
-        res.status(200).json({ message: "bid is added in bid history table" });
-      } else {
-        res.json({ message: "bid is not added" });
-      }
-    } catch (error) {
-      console.error(error);
-    }
-
-    // if (!user) {
-    //   return res.status(400).json({ error: "User parameter is missing" });
-    // }
-
-    // try {
-    //   const existingUser = AppDataSource.getRepository(Credit);
-    //   const data = await existingUser.findOne({
-    //     where: {
-    //       userId: user,
-    //     },
-    //   });
-
-    //   if (!data) {
-    //     return res.status(401).json(Template.userNotFound());
-    //   }
-
-    //   if (data.credits < 1) {
-    //     return res.status(403).json({ error: "Insufficient credits" });
-    //   }
-
-    //   data.credits -= 1;
-    //   await AppDataSource.getRepository(Credit).save(data);
-
-    //   const addbidrecord = await AppDataSource.getRepository(Bid);
-    //   const bidData = await addbidrecord.findOne({
-    //     where: {
-    //       userId: user,
-    //     },
-    //   });
-    //   if (bidData) {
-    //     const storedDate = moment(bidData.date).utc();
-    //     const inputDate = moment().utc();
-    //     if (
-    //       bidData &&
-    //       storedDate.isBefore(inputDate) &&
-    //       bidData.userId == user
-
-    //     ) {
-    //       return res.json({
-    //         message: "You have alredy placed the bid wait for the results",
-    //       });
-    //     }
-    //     bidData.userId = user;
-    //     bidData.date = moment().utc().toDate();
-    //     await AppDataSource.getRepository(Bid).save(bidData);
-    //   } else {
-    //     const createbid = await AppDataSource.getRepository(Bid).create();
-    //     createbid.userId = user;
-    //     createbid.date = moment().utc().toDate();
-    //     await AppDataSource.getRepository(Bid).save(createbid);
-    //   }
-    //   return res.json({
-    //     message: "Bid placed successfully",
-    //     newCredit: data.credits,
-    //   });
-    // } catch (error) {
-    //   console.error("Failed to place bid:", error);
-    //   return res.status(500).json({ error: "Internal server error" });
-    // }
-  };
+  
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
@@ -328,7 +248,7 @@ class CardController {
     if (data.length) {
       res.status(200).json({ history: data });
     } else {
-      res.json({ message: "error occured" });
+      res.json({ message: "no data available" });
     }
   };
   public static getallcards = async (req: Request, res: Response) => {
