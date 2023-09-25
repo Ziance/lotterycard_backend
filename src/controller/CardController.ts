@@ -14,38 +14,30 @@ class CardController {
 
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
-    console.log("step1 : ", user)
     if (!user) {
       return res.status(400).json({ error: "User parameter is missing" });
     }
-    console.log("step2 : ", user)
+    
     try {
       const existingUser = AppDataSource.getRepository(User);
-      console.log("step3 : ", existingUser)
-
       const userData = await existingUser.findOne({
         where: {
           userId: user,
         },
       });
-      console.log("step4 : ", userData)
 
       if (!userData) {
         return res.status(401).json(Template.userNotFound());
       }
-      console.log("step5 : ", userData)
 
       const sessionCheck = await AppDataSource.query(
         "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
-      console.log("step6 : ", sessionCheck)
-
 
       if (
         sessionCheck.length === 0 ||
         (sessionCheck.length && sessionCheck[0].allowBid !== 1)
       ) {
-        console.log("step7 : ", sessionCheck)
         return res.status(401).json({
           message: "bidding are close",
         });
@@ -60,6 +52,7 @@ class CardController {
       const bidData = await addbidrecord.findOne({
         where: {
           userId: user,
+          sessionId : sessionCheck[0].seesionId
         },
       });
 
@@ -182,6 +175,8 @@ class CardController {
       return res.status(500).json({ error: "Internal server error" });
     }
   };
+
+
   public static getWinner = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(Winner);
@@ -196,45 +191,12 @@ class CardController {
         message: "Winner data is",
         data,
       });
-      // console.log(data)
-      // const currentTime = new Date();
-
-      // // Calculate the start time for the previous one hour
-      // const oneHourAgo = new Date(currentTime.getTime() - 60 * 60 * 1000);
-
-      // // Calculate the start time for the previous two hours
-      // const twoHoursAgo = new Date(currentTime.getTime() - 2 * 60 * 60 * 1000);
-
-      // // Filter the data based on the timestamp
-      // const previousOneHourData = data.filter(
-      //   (item) =>
-      //     item.created_at >= oneHourAgo && item.created_at <= currentTime
-      // );
-      // const previousTwoHoursData = data.filter(
-      //   (item) =>
-      //     item.created_at >= twoHoursAgo && item.created_at <= currentTime
-      // );
-      // if (!data.length) {
-      //   return res
-      //     .status(404)
-      //     .json({ error: "Winner is not declare yet try after some time" });
-      // }
-      // if (!previousOneHourData) {
-      //   console.log(data);
-      //   return res
-      //     .status(404)
-      //     .json({ error: "No winner data found in perivious one hour" });
-      // } else if (!previousTwoHoursData) {
-      //   return res
-      //     .status(404)
-      //     .json({ error: "No winner data found in perivious second hour" });
-      // }
     } catch (error) {
       console.error("Failed to place bid:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   };
-  
+
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
@@ -325,7 +287,6 @@ async function checkAndStoreWinner() {
         const query = await AppDataSource.query(
           "SELECT * FROM session ORDER BY date(sessionEndTime) DESC LIMIT 1"
         );
-        console.log(query);
         const sessionId = query[0];
         const query1 = `update session set allowBid = 0  where id = ${sessionId.id}`;
         const result1 = await AppDataSource.query(query1);
@@ -421,11 +382,13 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-export const cronjob = cron.schedule("0 * * * *", () => {
+// "0 * * * *"
+export const cronjob = cron.schedule(' * * * *', async() => {
+  console.log("cronjob called")
   console.log("crone called at ", new Date().toUTCString());
-  winnningCard();
-  storeSessionData();
-  checkAndStoreWinner();
+  await winnningCard();
+  await storeSessionData();
+  await checkAndStoreWinner();
 });
 
 export default CardController;

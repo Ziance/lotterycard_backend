@@ -10,7 +10,6 @@ router.post("/loginwithgmail",AuthController.loginwithgmail)
 
 // for forgot password.
 router.post("/forgotpassword", AuthController.forgotpassword);
-
 router.post("/resetpassword", AuthController.resetpassword);
 
 

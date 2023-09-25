@@ -3,6 +3,7 @@ import express from "express";
 import AppDataSource from "./ormconfig";
 import { routes as apiRoutes } from "./routes/index";
 import bodyParser from "body-parser";
+import { cronjob } from "./controller/CardController";
 
 
 // establish database connection
@@ -17,11 +18,11 @@ AppDataSource.initialize()
 // create and setup express app
 const app = express();
 app.use(express.json());
-app.use(cors({origin: "*"}));
+app.use(cors({ origin: "*" }));
 app.use("/", apiRoutes);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-// job.start();
+cronjob.start();
 
 // start express server
 const PORT = Number(process.env.NODE_DOCKER_PORT) || 3001;
