@@ -43,7 +43,7 @@ class CardController {
         });
       }
 
-      if (userData.credits === 0) {
+      if (userData.credits === 1000) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
 

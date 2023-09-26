@@ -81,7 +81,7 @@ class UserController {
 
       const results = await AppDataSource.getRepository(User).save(user);
       delete results.passwordHash;
-      //await sendEmail(email, "Welcome To lotry", "Welcome to lotry, continue using our application.");
+      //await sendEmail(email, "Welcome To lottery", "Welcome to lottery, continue using our application.");
       return res.json(Template.success("Users created succesfully", results));
     } catch (error) {
       return res.status(401).json({ message: "error occured", error });
