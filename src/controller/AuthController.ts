@@ -86,6 +86,10 @@ class AuthController {
       return res.status(401).json({ message: "Given email address not found. please register first." });
     }
   };
+
+
+
+  
   static forgotpassword = async (req: Request, res: Response) => {
     //email user submitted
     const { email } = req.body;
