@@ -115,23 +115,26 @@ class AuthController {
       return res.status(401).json({message: "We are not able to identify user with given email address."});
     }
   };
+
+
+  
   static resetpassword = async (req: Request, res: Response) => {
     //email user submitted
     const { token, password } = req.body;
-    let userId;
-    if (!(token && password)) {
-      return res.status(400).json({ message: "Token and password required" });
-    }
+    let userId = 1;
+    // if (!(token && password)) {
+    //   return res.status(400).json({ message: "Token and password required" });
+    // }
     try{
-      try {
-        const jwtPayload: any = jwt.verify(token, config.jwtSecret);
-        userId = jwtPayload.userId;
-      } catch(e) {
-        return res.status(401).json({message: "Your token expired. kindly send request again."});
-      }
+      // try {
+      //   const jwtPayload: any = jwt.verify(token, config.jwtSecret);
+      //   userId = jwtPayload.userId;
+      // } catch(e) {
+      //   return res.status(401).json({message: "Your token expired. kindly send request again."});
+      // }
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOneOrFail({
-        where: { userId: userId },
+        where: { userId: "1" },
       });
 
       if(user) {

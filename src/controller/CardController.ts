@@ -17,7 +17,7 @@ class CardController {
     if (!user) {
       return res.status(400).json({ error: "User parameter is missing" });
     }
-    
+
     try {
       const existingUser = AppDataSource.getRepository(User);
       const userData = await existingUser.findOne({
@@ -52,7 +52,7 @@ class CardController {
       const bidData = await addbidrecord.findOne({
         where: {
           userId: user,
-          sessionId : sessionCheck[0].seesionId
+          sessionId: sessionCheck[0].seesionId
         },
       });
 
@@ -383,7 +383,7 @@ async function storeSessionData(): Promise<void> {
 }
 
 // "0 * * * *"
-export const cronjob = cron.schedule(' * * * *', async() => {
+export const cronjob = cron.schedule('*/1 * * * *', async () => {
   console.log("cronjob called")
   console.log("crone called at ", new Date().toUTCString());
   await winnningCard();
