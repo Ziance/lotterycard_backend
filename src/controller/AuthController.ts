@@ -27,9 +27,9 @@ class AuthController {
         },
       });
 
-      if(user) {
+      if (user) {
 
-        if(!user.isActive){
+        if (!user.isActive) {
           return res.status(401).json({ message: "Your account is deactivated, Please reach to support." });
         }
 
@@ -42,7 +42,7 @@ class AuthController {
         }
       } else {
         return res.status(401).json({ message: "We are not able identify user with given username." });
-      } 
+      }
 
       const token = jwt.sign({ userId: user.userId }, config.jwtSecret, {
         expiresIn: "24h",
@@ -52,8 +52,15 @@ class AuthController {
 
     } catch (error) {
       return res.status(401).json({ message: "We are not able identify user with given username." });
-    }    
+    }
   };
+
+
+
+
+
+
+  
   static updateUserRetryCount = async (username: string, currentCount: number) => {
     const userRepository = AppDataSource.getRepository(User);
     const isActive = (currentCount + 1) < AuthController.RETRY_COUNT;
@@ -61,8 +68,8 @@ class AuthController {
       retryCount: isActive ? currentCount + 1 : 0,
       isActive: isActive,
     })
-    .where("userName = :username", {username: username})
-    .execute();
+      .where("userName = :username", { username: username })
+      .execute();
     return isActive;
   }
   static loginwithgmail = async (req: Request, res: Response) => {
@@ -89,7 +96,7 @@ class AuthController {
 
 
 
-  
+
   static forgotpassword = async (req: Request, res: Response) => {
     //email user submitted
     const { email } = req.body;
@@ -109,19 +116,19 @@ class AuthController {
 
       const webUrl = "http://localhost/";
 
-      await sendEmail(email, "Reset Password Instruction",`
+      await sendEmail(email, "Reset Password Instruction", `
       <strong>Welcome to lottery </strong>
       <p>Click below to reset your password. Note: Your link will be expired in 15 minutes. </p>
       <a href="${webUrl}/resetpassword/${token}">CLICK HERE</a>
       `)
-      return res.status(200).json({message: "We have sent you an email with the instruction to reset your email.", token: token});
+      return res.status(200).json({ message: "We have sent you an email with the instruction to reset your email.", token: token });
     } catch (error) {
-      return res.status(401).json({message: "We are not able to identify user with given email address."});
+      return res.status(401).json({ message: "We are not able to identify user with given email address." });
     }
   };
 
 
-  
+
   static resetpassword = async (req: Request, res: Response) => {
     //email user submitted
     const { token, password } = req.body;
@@ -129,7 +136,7 @@ class AuthController {
     // if (!(token && password)) {
     //   return res.status(400).json({ message: "Token and password required" });
     // }
-    try{
+    try {
       // try {
       //   const jwtPayload: any = jwt.verify(token, config.jwtSecret);
       //   userId = jwtPayload.userId;
@@ -141,18 +148,18 @@ class AuthController {
         where: { userId: "1" },
       });
 
-      if(user) {
+      if (user) {
         const hashPassword = await hashText(password);
         userRepository.createQueryBuilder().update(User).set({
           passwordHash: hashPassword,
         })
-        .where("userId = :userId", {userId: user.userId})
-        .execute();
-        return res.status(200).json({message: "Your password reset successfully."})
+          .where("userId = :userId", { userId: user.userId })
+          .execute();
+        return res.status(200).json({ message: "Your password reset successfully." })
       }
-      
+
     } catch (error) {
-      return res.status(401).json({message: "We are not able to identify user based on token."});
+      return res.status(401).json({ message: "We are not able to identify user based on token." });
     }
   };
 }

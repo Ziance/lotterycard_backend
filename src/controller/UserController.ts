@@ -52,6 +52,7 @@ class UserController {
         phone,
         userName,
         email,
+        address,
         passwordHash
       } = req.body;
       const hashPassword = await hashText(passwordHash);
@@ -74,6 +75,7 @@ class UserController {
         phone: phone,
         userName: userName.trim(),
         email: email,
+        // address:address,
         passwordHash: hashPassword,
         isActive: true,
         credits: 53
@@ -87,6 +89,16 @@ class UserController {
       return res.status(401).json({ message: "error occured", error });
     }
   };
+
+
+  
+
+
+
+
+
+
+
 
 
   public static updateUser = async (req: Request, res: Response) => {

@@ -1,7 +1,6 @@
 import { Router } from "express";
 import AuthController from "../controller/AuthController"
-
-
+import {forgotPassword} from '../controller/forgotpassword';
 const router = Router();
 //Login route
 router.post("/login", AuthController.login);
@@ -9,7 +8,7 @@ router.post("/login", AuthController.login);
 router.post("/loginwithgmail",AuthController.loginwithgmail)
 
 // for forgot password.
-router.post("/forgotpassword", AuthController.forgotpassword);
+router.post("/forgotpassword", forgotPassword);
 router.post("/resetpassword", AuthController.resetpassword);
 
 
