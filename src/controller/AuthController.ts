@@ -4,7 +4,9 @@ import * as jwt from "jsonwebtoken";
 import { User } from "../entity/User";
 import config from "../config/config";
 import { compareText, hashText } from "../helper/bcrypt";
-import { sendEmail } from "../helper/emailHelper";
+import { sendEmail } from "./mailservice";
+import { url } from "inspector";
+import base64url from "base64url";
 
 class AuthController {
 
@@ -60,7 +62,7 @@ class AuthController {
 
 
 
-  
+
   static updateUserRetryCount = async (username: string, currentCount: number) => {
     const userRepository = AppDataSource.getRepository(User);
     const isActive = (currentCount + 1) < AuthController.RETRY_COUNT;
@@ -98,10 +100,10 @@ class AuthController {
 
 
   static forgotpassword = async (req: Request, res: Response) => {
-    //email user submitted
-    const { email } = req.body;
+    console.log("forgotpassword.......... callledddsads")
+    const email = req.body.email;
     if (!email) {
-      res.status(400).json({ message: "email required" });
+      return res.status(400).json({ message: "email required" });
     }
     const userRepository = AppDataSource.getRepository(User);
     let user: User;
@@ -109,21 +111,26 @@ class AuthController {
       user = await userRepository.findOneOrFail({
         where: { email: email },
       });
-
-      const token = jwt.sign({ userId: user.userId }, config.jwtSecret, {
-        expiresIn: "15m",
-      });
-
-      const webUrl = "http://localhost/";
-
-      await sendEmail(email, "Reset Password Instruction", `
-      <strong>Welcome to lottery </strong>
-      <p>Click below to reset your password. Note: Your link will be expired in 15 minutes. </p>
-      <a href="${webUrl}/resetpassword/${token}">CLICK HERE</a>
-      `)
-      return res.status(200).json({ message: "We have sent you an email with the instruction to reset your email.", token: token });
+      if(!user){
+        return res.status(404).json({
+          message : "user not found"
+        })
+      }
+      console.log("userr is : " , user)
+      const webUrl = "http://localhost:3000/reset-password";
+      const defaultEmailoptions = {
+        to: email,
+        subject: `Forgot Password`,
+        template: 'forgotpassword',
+      };
+      const userData = {
+        name: user.firstName + ' ' + user.lastName,
+        webUrl,
+      };
+      await sendEmail(defaultEmailoptions, userData)
+      return res.status(200).json({ message: "We have sent you an email with the instruction to reset your email."});
     } catch (error) {
-      return res.status(401).json({ message: "We are not able to identify user with given email address." });
+      return res.status(500).json({ message: error.message });
     }
   };
 

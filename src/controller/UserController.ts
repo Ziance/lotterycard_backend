@@ -43,7 +43,6 @@ class UserController {
   };
 
 
-
   public static addUser = async (req: Request, res: Response, next: any) => {
     try {
       const {
@@ -53,10 +52,9 @@ class UserController {
         userName,
         email,
         address,
-        passwordHash
+        password
       } = req.body;
-      const hashPassword = await hashText(passwordHash);
-
+      const hashPassword = await hashText(password);
       const userRepository = AppDataSource.getRepository(User);
       const userExists = await userRepository.find({
         where: {
@@ -66,7 +64,7 @@ class UserController {
       })
 
       if (userExists.length) {
-        return res.status(403).json({ message: "user already exists" });
+        return res.status(403).json({ message: "User already exists" });
       }
 
       const user = AppDataSource.getRepository(User).create({
@@ -75,33 +73,21 @@ class UserController {
         phone: phone,
         userName: userName.trim(),
         email: email,
-        // address:address,
+        address: address,
         passwordHash: hashPassword,
         isActive: true,
         credits: 53
       });
 
       const results = await AppDataSource.getRepository(User).save(user);
-      delete results.passwordHash;
       //await sendEmail(email, "Welcome To lottery", "Welcome to lottery, continue using our application.");
-      return res.json(Template.success("Users created succesfully", results));
+      return res.json(Template.success("Users Created Succesfully", results));
     } catch (error) {
       return res.status(401).json({ message: "error occured", error });
     }
   };
 
-
-  
-
-
-
-
-
-
-
-
-
-  public static updateUser = async (req: Request, res: Response) => {
+public static updateUser = async (req: Request, res: Response) => {
     const userId = await AppDataSource.getRepository(User).findOne({
       where: {
         userId: req.params.userId,

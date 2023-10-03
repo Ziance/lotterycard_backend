@@ -81,7 +81,6 @@ class CardController {
         }
       );
       await AppDataSource.getRepository(UserBidHistory).save(bidHistory);
-
       return res.status(200).json({
         message: "Bid placed successfully",
         newCredit: userData.credits,
@@ -384,11 +383,11 @@ async function storeSessionData(): Promise<void> {
 
 // "0 * * * *"
 export const cronjob = cron.schedule('*/1 * * * *', async () => {
-  console.log("cronjob called")
-  console.log("crone called at ", new Date().toUTCString());
-  await winnningCard();
-  await storeSessionData();
-  await checkAndStoreWinner();
+  // console.log("cronjob called")
+  // console.log("crone called at ", new Date().toUTCString());
+  // await winnningCard();
+  // await storeSessionData();
+  // await checkAndStoreWinner();
 });
 
 export default CardController;

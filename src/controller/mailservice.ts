@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendEmail = async (defaultOption, data) => {
-  console.log("infoooooo11111111",defaultOption, data);
+  console.log("sendEmail",defaultOption);
 
   const templatePath = path.join(
     __dirname,

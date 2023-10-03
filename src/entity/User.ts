@@ -21,6 +21,9 @@ export class User {
   @Column({ type: "varchar", length: 20, nullable: false })
   phone: string;
 
+  @Column({ type: "varchar", length: 200, nullable: false })
+  address: string;
+
   @Column({ unique: true, nullable: false })
   userName: string;
 

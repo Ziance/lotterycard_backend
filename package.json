@@ -22,6 +22,7 @@
     "body-parser": "^1.20.1",
     "class-validator": "^0.14.0",
     "cors": "^2.8.5",
+    "crypto-js": "^4.1.1",
     "dotenv": "^16.0.3",
     "ejs": "^3.1.9",
     "env-cmd": "^10.1.0",
