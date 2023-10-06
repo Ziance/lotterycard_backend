@@ -42,7 +42,6 @@ class CardController {
           message: "bidding are close",
         });
       }
-console.log("sessionnnnn.....", sessionCheck);
 
       if (userData.credits === 153) {
         return res.status(403).json({ error: "Insufficient credits" });
@@ -197,6 +196,22 @@ console.log("sessionnnnn.....", sessionCheck);
     }
   };
 
+
+  public static getWinnersCardList = async (req: Request, res: Response) => {
+    try {
+      const winnerRepository = AppDataSource.getRepository(winningCard);
+      const data = await winnerRepository.find();
+      
+      return res.status(200).json({
+        message: "Winner Cards list",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+
+  
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
@@ -382,13 +397,12 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-// "0 * * * *"
 export const cronjob = cron.schedule('*/1 * * * *', async () => {
-   console.log("cronjob called")
-   console.log("crone called at ", new Date().toUTCString());
- await winnningCard();
- await storeSessionData();
-  await checkAndStoreWinner();
+//    console.log("cronjob called")
+//    console.log("crone called at ", new Date().toUTCString());
+//  await winnningCard();
+//  await storeSessionData();
+//   await checkAndStoreWinner();
 });
 
 export default CardController;
