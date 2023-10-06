@@ -11,6 +11,7 @@ export class Session {
   @Column({ type: "timestamp" , default:null})
   sessionStartTime: Date;
 
+
   @Column({ type: "timestamp" , default:null})
   sessionEndTime: Date;
 

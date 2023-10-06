@@ -36,14 +36,15 @@ class CardController {
 
       if (
         sessionCheck.length === 0 ||
-        (sessionCheck.length && sessionCheck[0].allowBid !== 1)
+        (sessionCheck.length && sessionCheck[0].allowBid !== 8)
       ) {
         return res.status(401).json({
           message: "bidding are close",
         });
       }
+console.log("sessionnnnn.....", sessionCheck);
 
-      if (userData.credits === 1000) {
+      if (userData.credits === 153) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
 
@@ -52,7 +53,7 @@ class CardController {
       const bidData = await addbidrecord.findOne({
         where: {
           userId: user,
-          sessionId: sessionCheck[0].seesionId
+          sessionId: sessionCheck[0].sesionId
         },
       });
 
@@ -236,7 +237,7 @@ async function checkAndStoreWinner() {
       return;
     }
     const latestBidCard = query[0];
-    // console.log("Latest bid card:", latestBidCard);
+     console.log("Latest bid card:", latestBidCard);
 
     const query1 = await AppDataSource.query(
       "SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1"
@@ -246,18 +247,18 @@ async function checkAndStoreWinner() {
       return;
     }
     const winCard = query1[0];
-    // console.log("Latest winning card:", winCard.winnerCard);
+     console.log("Latest winning card:", winCard.winnerCard);
 
     const query2 = await AppDataSource.query(
       "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
     );
 
     if (query2.length === 0) {
-      // console.log("No session found in the database.");
+       console.log("No session found in the database.");
       return;
     }
     const sessionId = query2[0];
-    // console.log("session id :", sessionId);
+     console.log("session id :", sessionId);
 
     const query3 = await AppDataSource.query(
       `SELECT * FROM bid where bidCard = '${winCard.winnerCard}'`
@@ -383,11 +384,11 @@ async function storeSessionData(): Promise<void> {
 
 // "0 * * * *"
 export const cronjob = cron.schedule('*/1 * * * *', async () => {
-  // console.log("cronjob called")
-  // console.log("crone called at ", new Date().toUTCString());
-  // await winnningCard();
-  // await storeSessionData();
-  // await checkAndStoreWinner();
+   console.log("cronjob called")
+   console.log("crone called at ", new Date().toUTCString());
+ await winnningCard();
+ await storeSessionData();
+  await checkAndStoreWinner();
 });
 
 export default CardController;

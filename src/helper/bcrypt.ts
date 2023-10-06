@@ -24,12 +24,18 @@ export const compareText = async (text: any, hash_text: any) => {
 ​
 //Encrypting text
 export const encryptData = (text) => {
+  console.log("text",text);
+  console.log("crypto js . aes ",CryptoJS.AES.encrypt(text, SECRET_KEY));
+  
     return CryptoJS.AES.encrypt(text, SECRET_KEY).toString().replace('/','sls');
 };
 ​
 
 
 // Decrypting text
-export const decryptData = (text) => {
-    return CryptoJS.AES.decrypt(text.toString(), SECRET_KEY).toString(CryptoJS.enc.Utf8).replace('sls', '/');
-};
+// export const decryptData = (text) => {
+//     return CryptoJS.AES.decrypt(text.toString(), SECRET_KEY).toString(CryptoJS.enc.Utf8).replace('sls', '/');
+// };
+
+
+ 

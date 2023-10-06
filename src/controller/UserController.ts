@@ -47,7 +47,7 @@ class UserController {
     try {
       const {
         firstName,
-        lastName,
+        lastName, 
         phone,
         userName,
         email,
@@ -75,7 +75,7 @@ class UserController {
         email: email,
         address: address,
         passwordHash: hashPassword,
-        isActive: true,
+        isActive: true, 
         credits: 53
       });
 

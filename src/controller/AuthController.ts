@@ -3,16 +3,17 @@ import AppDataSource from "../ormconfig";
 import * as jwt from "jsonwebtoken";
 import { User } from "../entity/User";
 import config from "../config/config";
-import { compareText, hashText } from "../helper/bcrypt";
+import { compareText, encryptData, hashText } from "../helper/bcrypt";
 import { sendEmail } from "./mailservice";
 import { url } from "inspector";
 import base64url from "base64url";
+import moment from "moment";
 
 class AuthController {
 
   static RETRY_COUNT = 5;
 
-  static login = async (req: Request, res: Response) => {
+  static login = async (req: Request, res: Response) => { 
     //Check if username and password are set
     let { userName, password } = req.body;
     console.log("requestttt", req.body);
@@ -59,10 +60,6 @@ class AuthController {
 
 
 
-
-
-
-
   static updateUserRetryCount = async (username: string, currentCount: number) => {
     const userRepository = AppDataSource.getRepository(User);
     const isActive = (currentCount + 1) < AuthController.RETRY_COUNT;
@@ -101,25 +98,33 @@ class AuthController {
 
   static forgotpassword = async (req: Request, res: Response) => {
     console.log("forgotpassword.......... callledddsads")
-    const email = req.body.email;
-    if (!email) {
+    const email1: any = req.body.email;
+    if (!email1) {
       return res.status(400).json({ message: "email required" });
     }
     const userRepository = AppDataSource.getRepository(User);
     let user: User;
     try {
       user = await userRepository.findOneOrFail({
-        where: { email: email },
+        where: { email: email1 },
       });
-      if(!user){
+      if (!user) {
         return res.status(404).json({
-          message : "user not found"
+          message: "user not found"
         })
       }
-      console.log("userr is : " , user)
-      const webUrl = "http://localhost:3000/reset-password";
+      // console.log("userr is : " , user)
+      const id = encryptData(user?.userId.toString())
+      console.log("gerttoing in");
+      const email = encryptData(user.email)
+      console.log("second c", email);
+
+      const expireAt = encryptData(moment().add(10, 'minutes').toString())
+      console.log("id.......", email, id, expireAt);
+
+      const webUrl = `http://localhost:3000/reset-password/${id}/${email}/${expireAt}`;
       const defaultEmailoptions = {
-        to: email,
+        to: email1,
         subject: `Forgot Password`,
         template: 'forgotpassword',
       };
@@ -128,7 +133,7 @@ class AuthController {
         webUrl,
       };
       await sendEmail(defaultEmailoptions, userData)
-      return res.status(200).json({ message: "We have sent you an email with the instruction to reset your email."});
+      return res.status(200).json({ message: "We have sent you an email with the instruction to reset your email." });
     } catch (error) {
       return res.status(500).json({ message: error.message });
     }
@@ -137,12 +142,16 @@ class AuthController {
 
 
   static resetpassword = async (req: Request, res: Response) => {
-    //email user submitted
-    const { token, password } = req.body;
+    
+    const { id, email, password } = req.body;
     let userId = 1;
-    // if (!(token && password)) {
-    //   return res.status(400).json({ message: "Token and password required" });
-    // }
+
+    if (!(id && email && password)) {
+       return res.status(400).json({ message: "id , email and password required" });
+    }
+    console.log("password....", password);
+    
+
     try {
       // try {
       //   const jwtPayload: any = jwt.verify(token, config.jwtSecret);
@@ -155,18 +164,19 @@ class AuthController {
         where: { userId: "1" },
       });
 
-      if (user) {
+if (user) {
         const hashPassword = await hashText(password);
         userRepository.createQueryBuilder().update(User).set({
+
           passwordHash: hashPassword,
         })
-          .where("userId = :userId", { userId: user.userId })
+          .where("userId = :userId", { userId: user.userId },)
           .execute();
         return res.status(200).json({ message: "Your password reset successfully." })
       }
 
     } catch (error) {
-      return res.status(401).json({ message: "We are not able to identify user based on token." });
+      return res.status(500).json({ message: "We are not able to identify user based on email." });
     }
   };
 }
