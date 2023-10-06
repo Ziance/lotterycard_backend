@@ -11,7 +11,6 @@ import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
 import { Cards } from "../entity/Cards";
 class CardController {
-
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
     if (!user) {
@@ -52,7 +51,7 @@ class CardController {
       const bidData = await addbidrecord.findOne({
         where: {
           userId: user,
-          sessionId: sessionCheck[0].sesionId
+          sessionId: sessionCheck[0].sesionId,
         },
       });
 
@@ -72,14 +71,14 @@ class CardController {
       userData.credits -= 1;
       await AppDataSource.getRepository(User).save(userData);
 
-      const bidHistory = await AppDataSource.getRepository(UserBidHistory).create(
-        {
-          userId: user,
-          bidCard: req.body.card,
-          date: new Date(),
-          bidStatus: false
-        }
-      );
+      const bidHistory = await AppDataSource.getRepository(
+        UserBidHistory
+      ).create({
+        userId: user,
+        bidCard: req.body.card,
+        date: new Date(),
+        bidStatus: false,
+      });
       await AppDataSource.getRepository(UserBidHistory).save(bidHistory);
       return res.status(200).json({
         message: "Bid placed successfully",
@@ -175,7 +174,6 @@ class CardController {
     }
   };
 
-
   public static getWinner = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(Winner);
@@ -196,12 +194,11 @@ class CardController {
     }
   };
 
-
   public static getWinnersCardList = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(winningCard);
       const data = await winnerRepository.find();
-      
+
       return res.status(200).json({
         message: "Winner Cards list",
         data,
@@ -211,7 +208,6 @@ class CardController {
     }
   };
 
-  
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
@@ -228,6 +224,7 @@ class CardController {
       res.json({ message: "no data available" });
     }
   };
+
   public static getallcards = async (req: Request, res: Response) => {
     try {
       const cards = AppDataSource.getRepository(Cards);
@@ -237,6 +234,85 @@ class CardController {
       console.log(error);
       res.status(500).json({
         error: error,
+      });
+    }
+  };
+
+  public static manuallySessionCalledTest = async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const sessionRepository = AppDataSource.getRepository(Session);
+      const winnerRepository = AppDataSource.getRepository(winningCard);
+
+      const sessionData = await sessionRepository.find();
+      console.log("sessionData : ", sessionData);
+
+      if (sessionData.length === 0) {
+        console.log("session is not available...");
+        return;
+      }
+
+      const winnerData = await winnerRepository.save(
+        winnerRepository.create({
+          winnerCard: await getRandomCard(),
+          sessionId: sessionData[0].seesionId,
+          created_at: moment().utc().toDate(),
+        })
+      );
+      console.log("Winning card is Saved ", winnerData);
+
+      const startTime = new Date();
+      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+      const sessionId = Math.floor(Math.random() * 100);
+
+      const createdSession = await sessionRepository.save(
+        sessionRepository.create({
+          sessionStartTime: startTime,
+          sessionEndTime: endTime,
+          allowBid: true,
+          seesionId: sessionId,
+        })
+      );
+      console.log("Winning card is Saved ", createdSession);
+
+      const bidQuery = `SELECT * FROM bid ORDER BY date DESC LIMIT 1`;
+      const bidResult = await AppDataSource.query(bidQuery);
+      if (bidResult.length === 0) {
+        console.log("No bid card found in the database.");
+        return;
+      }
+      
+      const winningCardQuery = `SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1`
+      const winningResult = await AppDataSource.query(winningCardQuery);
+      if (winningResult.length === 0) {
+        console.log(`No winner card found in the database.`);
+        return;
+      }
+
+      const sessionQuery = `SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1`
+      const sessionResult = await AppDataSource.query(sessionQuery);
+      if (sessionResult.length === 0) {
+        console.log(`No session found in the database.`);
+        return;
+      }
+
+      const latestBidCard = bidResult[0];
+      console.log("Latest bid card:", latestBidCard);
+
+      const winningCard = winningResult[0];
+      console.log("winningCard : " , winningCard)
+
+      const currentSessionData = sessionResult[0];
+      console.log("currentSessionData : " , currentSessionData)
+
+      // this is pending
+
+      return res.status(200).json({ message: "manually session check...." });
+    } catch (error) {
+      return res.status(500).json({
+        error: error.message,
       });
     }
   };
@@ -252,7 +328,7 @@ async function checkAndStoreWinner() {
       return;
     }
     const latestBidCard = query[0];
-     console.log("Latest bid card:", latestBidCard);
+    console.log("Latest bid card:", latestBidCard);
 
     const query1 = await AppDataSource.query(
       "SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1"
@@ -262,18 +338,18 @@ async function checkAndStoreWinner() {
       return;
     }
     const winCard = query1[0];
-     console.log("Latest winning card:", winCard.winnerCard);
+    console.log("Latest winning card:", winCard.winnerCard);
 
     const query2 = await AppDataSource.query(
       "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
     );
 
     if (query2.length === 0) {
-       console.log("No session found in the database.");
+      console.log("No session found in the database.");
       return;
     }
     const sessionId = query2[0];
-     console.log("session id :", sessionId);
+    console.log("session id :", sessionId);
 
     const query3 = await AppDataSource.query(
       `SELECT * FROM bid where bidCard = '${winCard.winnerCard}'`
@@ -397,12 +473,12 @@ async function storeSessionData(): Promise<void> {
   }
 }
 
-export const cronjob = cron.schedule('*/1 * * * *', async () => {
-//    console.log("cronjob called")
-//    console.log("crone called at ", new Date().toUTCString());
-//  await winnningCard();
-//  await storeSessionData();
-//   await checkAndStoreWinner();
+export const cronjob = cron.schedule("*/1 * * * *", async () => {
+  //    console.log("cronjob called")
+  //    console.log("crone called at ", new Date().toUTCString());
+  //  await winnningCard();
+  //  await storeSessionData();
+  //   await checkAndStoreWinner();
 });
 
 export default CardController;
