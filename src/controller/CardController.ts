@@ -301,8 +301,8 @@ class CardController {
       const latestBidCard = bidResult[0];
       console.log("Latest bid card:", latestBidCard);
 
-      const winningCard = winningResult[0];
-      console.log("winningCard : " , winningCard)
+      const currrentWinningCard = winningResult[0];
+      console.log("currrentWinningCard : " , currrentWinningCard)
 
       const currentSessionData = sessionResult[0];
       console.log("currentSessionData : " , currentSessionData)
