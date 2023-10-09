@@ -30,7 +30,6 @@ class AuthController {
       });
 
       if (user) {
-
         if (!user.isActive) {
           return res.status(401).json({ message: "Your account is deactivated, Please reach to support." });
         }

@@ -59,13 +59,21 @@ const ResponseTemplate = {
       `${req.method} ${req.url}`,
       Err.RouteNotFound
     );
+
+
   },
+
+
+
+  
   userNotFound(message?: any,code?: any) {
     return {
     Sataus: code || Err.UserNotFound,  
     message: message || "User you're looking for doesn't exist or you dont have permissions to access it.",
     }
   },
+
+
   userAlreadyExist() {
     return ResponseTemplate.error(
       "User with email already exist",

@@ -88,6 +88,8 @@ class UserController {
   };
 
 public static updateUser = async (req: Request, res: Response) => {
+  console.log("updateUser : " , req)
+  
     const userId = await AppDataSource.getRepository(User).findOne({
       where: {
         userId: req.params.userId,

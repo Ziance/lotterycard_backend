@@ -16,6 +16,7 @@ class CardController {
     if (!user) {
       return res.status(400).json({ error: "User parameter is missing" });
     }
+console.log("parameter missing");
 
     try {
       const existingUser = AppDataSource.getRepository(User);
@@ -25,6 +26,9 @@ class CardController {
         },
       });
 
+console.log("existing user...", existingUser);
+
+
       if (!userData) {
         return res.status(401).json(Template.userNotFound());
       }
@@ -33,27 +37,40 @@ class CardController {
         "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
 
+console.log("userDatavvvvvvvvvvvvvv", userData);
+console.log("sessionCheckvvvvvvvv", sessionCheck);
+
+
       if (
         sessionCheck.length === 0 ||
-        (sessionCheck.length && sessionCheck[0].allowBid !== 8)
+        (sessionCheck.length && sessionCheck[0].allowBid == 0)
       ) {
         return res.status(401).json({
           message: "bidding are close",
         });
       }
 
-      if (userData.credits === 153) {
+
+
+      if (userData.credits === 0) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
 
       const addbidrecord = AppDataSource.getRepository(Bid);
+      console.log("addbidrecordaddbidrecord", addbidrecord);
+      
 
       const bidData = await addbidrecord.findOne({
+        
         where: {
           userId: user,
           sessionId: sessionCheck[0].sesionId,
         },
       });
+
+
+
+
 
       if (bidData) {
         return res.status(409).json({
@@ -73,7 +90,7 @@ class CardController {
 
       const bidHistory = await AppDataSource.getRepository(
         UserBidHistory
-      ).create({
+      ).create({ 
         userId: user,
         bidCard: req.body.card,
         date: new Date(),
