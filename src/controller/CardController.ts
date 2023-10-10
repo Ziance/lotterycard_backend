@@ -16,7 +16,7 @@ class CardController {
     if (!user) {
       return res.status(400).json({ error: "User parameter is missing" });
     }
-console.log("parameter missing");
+    console.log("parameter missing");
 
     try {
       const existingUser = AppDataSource.getRepository(User);
@@ -26,7 +26,7 @@ console.log("parameter missing");
         },
       });
 
-console.log("existing user...", existingUser);
+      console.log("existing user...", existingUser);
 
 
       if (!userData) {
@@ -37,8 +37,8 @@ console.log("existing user...", existingUser);
         "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
       );
 
-console.log("userDatavvvvvvvvvvvvvv", userData);
-console.log("sessionCheckvvvvvvvv", sessionCheck);
+      console.log("userDatavvvvvvvvvvvvvv", userData);
+      console.log("sessionCheckvvvvvvvv", sessionCheck);
 
 
       if (
@@ -50,27 +50,30 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
         });
       }
 
+      console.log("sessionCheck.length...", sessionCheck.length);
 
 
       if (userData.credits === 0) {
         return res.status(403).json({ error: "Insufficient credits" });
       }
+      console.log("userData1111", userData);
+
 
       const addbidrecord = AppDataSource.getRepository(Bid);
       console.log("addbidrecordaddbidrecord", addbidrecord);
-      
+
 
       const bidData = await addbidrecord.findOne({
-        
+
+
+
         where: {
           userId: user,
           sessionId: sessionCheck[0].sesionId,
         },
       });
 
-
-
-
+      console.log("bidData22222222", bidData);
 
       if (bidData) {
         return res.status(409).json({
@@ -90,12 +93,14 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
 
       const bidHistory = await AppDataSource.getRepository(
         UserBidHistory
-      ).create({ 
+      ).create({
         userId: user,
+        sessionId: sessionCheck[0].sesionId,
         bidCard: req.body.card,
         date: new Date(),
-        bidStatus: false,
+        bidStatus: false
       });
+
       await AppDataSource.getRepository(UserBidHistory).save(bidHistory);
       return res.status(200).json({
         message: "Bid placed successfully",
@@ -191,6 +196,9 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
     }
   };
 
+
+
+
   public static getWinner = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(Winner);
@@ -211,6 +219,9 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
     }
   };
 
+
+
+
   public static getWinnersCardList = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(winningCard);
@@ -225,18 +236,16 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
     }
   };
 
+
+
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
-    const response = await AppDataSource.getRepository(UserBidHistory);
+    const myQuery = `SELECT ub.id,ub.date,ub.bidCard,wc.winnerCard FROM user_bid_history ub LEFT JOIN winning_card wc ON ub.sessionId = wc.sessionId WHERE ub.userId = ${userId}`
+    const response = await AppDataSource.query(myQuery);
 
-    const data = await response.find({
-      where: {
-        userId: userId,
-      },
-    });
-    if (data.length) {
-      res.status(200).json({ history: data });
+    if (response.length) {
+      res.status(200).json({ history: response });
     } else {
       res.json({ message: "no data available" });
     }
@@ -300,7 +309,7 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
         console.log("No bid card found in the database.");
         return;
       }
-      
+
       const winningCardQuery = `SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1`
       const winningResult = await AppDataSource.query(winningCardQuery);
       if (winningResult.length === 0) {
@@ -319,10 +328,10 @@ console.log("sessionCheckvvvvvvvv", sessionCheck);
       console.log("Latest bid card:", latestBidCard);
 
       const currrentWinningCard = winningResult[0];
-      console.log("currrentWinningCard : " , currrentWinningCard)
+      console.log("currrentWinningCard : ", currrentWinningCard)
 
       const currentSessionData = sessionResult[0];
-      console.log("currentSessionData : " , currentSessionData)
+      console.log("currentSessionData : ", currentSessionData)
 
       // this is pending
 

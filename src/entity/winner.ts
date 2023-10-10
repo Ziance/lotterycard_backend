@@ -5,8 +5,8 @@ export class Winner {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // @Column()
-  // userId : string;
+   @Column()
+   userId : string;
 
   @Column()
   sessionId : number;

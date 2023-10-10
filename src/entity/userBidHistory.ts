@@ -6,6 +6,9 @@ export class UserBidHistory {
   id: string;
 
   @Column()
+  sessionId : number;
+
+  @Column()
   userId?: string;
 
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
@@ -16,7 +19,4 @@ export class UserBidHistory {
 
   @Column({ type: "text" })
   bidCard: string;
-
-  @Column({ type: "text" })
-  winnerCard: string;
 }
