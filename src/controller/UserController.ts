@@ -75,7 +75,6 @@ class UserController {
         email: email,
         address: address,
         passwordHash: hashPassword,
-        isActive: true, 
         credits: 53
       });
 

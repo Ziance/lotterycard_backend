@@ -9,10 +9,10 @@ router.get("/winner-cards", CardController.getWinnersCardList);
 router.get("/winner", CardController.getWinner);
 router.get("/getUserBidHistory/:userId", CardController.getUserBidHistory);
 router.get("/getcards", CardController.getallcards);
+router.get("/manually-session", CardController.manuallySessionCalledTest);
 router.post("/changeCard/:userId",CardController.changeCards)
 router.post("/addCredits/:userId", CardController.addMoreCredits);
 
 // this is for testing only
-router.get("/manually-session", CardController.manuallySessionCalledTest);
 
 export default router;

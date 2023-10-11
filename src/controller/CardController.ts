@@ -43,7 +43,7 @@ class CardController {
 
       if (
         sessionCheck.length === 0 ||
-        (sessionCheck.length && sessionCheck[0].allowBid == 0)
+        (sessionCheck.length && sessionCheck[0].allowBid === 0)
       ) {
         return res.status(401).json({
           message: "bidding are close",
@@ -64,12 +64,9 @@ class CardController {
 
 
       const bidData = await addbidrecord.findOne({
-
-
-
         where: {
           userId: user,
-          sessionId: sessionCheck[0].sesionId,
+          sessionId: sessionCheck[0].sessionId,
         },
       });
 
@@ -82,10 +79,12 @@ class CardController {
       }
 
       const createbid = await AppDataSource.getRepository(Bid).create();
+      console.log("CREATED BID response", createbid);
+
       createbid.userId = user;
       createbid.date = moment().utc().toDate();
       createbid.bidCard = req.body.card;
-      createbid.sessionId = sessionCheck[0].seesionId;
+      createbid.sessionId = sessionCheck[0].sessionId;
       await AppDataSource.getRepository(Bid).save(createbid);
 
       userData.credits -= 1;
@@ -95,13 +94,15 @@ class CardController {
         UserBidHistory
       ).create({
         userId: user,
-        sessionId: sessionCheck[0].sesionId,
+        sessionId: sessionCheck[0].sessionId,
         bidCard: req.body.card,
-        date: new Date(),
-        bidStatus: false
+        date: new Date()
       });
+      console.log("bidHistory", bidHistory);
 
       await AppDataSource.getRepository(UserBidHistory).save(bidHistory);
+      console.log("ended");
+
       return res.status(200).json({
         message: "Bid placed successfully",
         newCredit: userData.credits,
@@ -273,7 +274,7 @@ class CardController {
       const winnerRepository = AppDataSource.getRepository(winningCard);
 
       const sessionData = await sessionRepository.find();
-      console.log("sessionData : ", sessionData);
+      // console.log("sessionData : ", sessionData);
 
       if (sessionData.length === 0) {
         console.log("session is not available...");
@@ -283,14 +284,16 @@ class CardController {
       const winnerData = await winnerRepository.save(
         winnerRepository.create({
           winnerCard: await getRandomCard(),
-          sessionId: sessionData[0].seesionId,
+          sessionId: sessionData[0].sessionId,
           created_at: moment().utc().toDate(),
         })
       );
-      console.log("Winning card is Saved ", winnerData);
+      // console.log("Winning card is Saved ", winnerData);
 
       const startTime = new Date();
-      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+      // const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+      const endTime = new Date(startTime.getTime() + 60);
+
       const sessionId = Math.floor(Math.random() * 100);
 
       const createdSession = await sessionRepository.save(
@@ -298,10 +301,10 @@ class CardController {
           sessionStartTime: startTime,
           sessionEndTime: endTime,
           allowBid: true,
-          seesionId: sessionId,
+          sessionId: sessionId,
         })
       );
-      console.log("Winning card is Saved ", createdSession);
+      console.log("createdSession ", createdSession);
 
       const bidQuery = `SELECT * FROM bid ORDER BY date DESC LIMIT 1`;
       const bidResult = await AppDataSource.query(bidQuery);
@@ -344,94 +347,6 @@ class CardController {
   };
 }
 
-async function checkAndStoreWinner() {
-  try {
-    const query = await AppDataSource.query(
-      "SELECT * FROM bid ORDER BY date DESC LIMIT 1"
-    );
-    if (query.length === 0) {
-      console.log("No bid card found in the database.");
-      return;
-    }
-    const latestBidCard = query[0];
-    console.log("Latest bid card:", latestBidCard);
-
-    const query1 = await AppDataSource.query(
-      "SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1"
-    );
-    if (query1.length === 0) {
-      console.log("No winner card found in the database.");
-      return;
-    }
-    const winCard = query1[0];
-    console.log("Latest winning card:", winCard.winnerCard);
-
-    const query2 = await AppDataSource.query(
-      "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
-    );
-
-    if (query2.length === 0) {
-      console.log("No session found in the database.");
-      return;
-    }
-    const sessionId = query2[0];
-    console.log("session id :", sessionId);
-
-    const query3 = await AppDataSource.query(
-      `SELECT * FROM bid where bidCard = '${winCard.winnerCard}'`
-    );
-    if (query3.length === 0) {
-      console.log("no user winning");
-      return;
-    }
-    const userids = query3;
-    console.log(userids);
-
-    if (latestBidCard.bidCard === winCard.winnerCard) {
-      // Create a new winner
-      const newWinner = AppDataSource.getRepository(Winner).create({
-        winners: userids.map((item: any) => item.userId).join(","),
-        winnerBidCard: latestBidCard.bidCard,
-        created_at: moment().utc().toDate(),
-        sessionId: sessionId.seesionId,
-      });
-
-      // Save the winner to the database
-      const savedWinner = await AppDataSource.getRepository(Winner).save(
-        newWinner
-      );
-      if (savedWinner) {
-        const query = await AppDataSource.query(
-          "SELECT * FROM session ORDER BY date(sessionEndTime) DESC LIMIT 1"
-        );
-        const sessionId = query[0];
-        const query1 = `update session set allowBid = 0  where id = ${sessionId.id}`;
-        const result1 = await AppDataSource.query(query1);
-        console.log("update query", query1);
-        // const update = query1;
-        const startTime = new Date();
-        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-        let sessionid = Math.floor(Math.random() * 100);
-
-        const session = await AppDataSource.getRepository(Session).create();
-        (session.sessionStartTime = startTime),
-          (session.sessionEndTime = endTime),
-          (session.allowBid = true),
-          (session.seesionId = sessionid),
-          await AppDataSource.getRepository(Session).save(session);
-        console.log("Session data saved:", session);
-
-        return;
-      }
-      console.log("User details stored in the winner table:", savedWinner);
-    } else {
-      console.log("User did not win.");
-    }
-  } catch (error) {
-    console.log("error is", error);
-  }
-}
-
 function getRandomCard(): string {
   const suits = ["HEARTS", "DIAMONDS", "CLUBS", "SPADES"];
   const values = [
@@ -453,58 +368,74 @@ function getRandomCard(): string {
   const randomSuit = suits[Math.floor(Math.random() * suits.length)];
   const randomValue = values[Math.floor(Math.random() * values.length)];
 
+  return "ACE_OF_CLUBS";
   return `${randomValue}_OF_${randomSuit}`;
 }
 
-const winnningCard = async () => {
+async function commonSessionManage(): Promise<void> {
   try {
-    const session = AppDataSource.getRepository(Session);
-    const sessionId = await session.find();
+    // check session is active or not 
+    const sessionData = await AppDataSource.query(`SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1`);
+    if (sessionData.length === 0) {
+      console.log("no sessiong is available and return")
+      return
+    }
+
+    const totalBids = await AppDataSource.query(`SELECT * FROM bid WHERE sessionId = ${sessionData[0].sessionId}`);
+    if (totalBids.length === 0) {
+      console.log("No bid card found in the database.");
+      return;
+    }
+
+    const randomWinningCard = await getRandomCard()
+    const winnerUserData = await totalBids.find((item) => item.bidCard === randomWinningCard)
+  
+    // insert winner to db
     const winnerRepository = AppDataSource.getRepository(winningCard);
     const data = winnerRepository.create({
-      winnerCard: getRandomCard(),
-      sessionId: sessionId[0].seesionId,
+      winnerCard: randomWinningCard,
+      sessionId: sessionData[0].sessionId,
       created_at: moment().utc().toDate(),
     });
-    const cardDetail = await AppDataSource.getRepository(winningCard).save(
+
+    const newWinnerCard = await AppDataSource.getRepository(winningCard).save(
       data
     );
-    console.log("Winning card is Saved ", cardDetail);
+
+    if (winnerUserData) {
+      const newWinner = AppDataSource.getRepository(Winner).create({
+        userId: winnerUserData.userId,
+        winnerBidCard: randomWinningCard,
+        created_at: moment().utc().toDate(),
+        sessionId: sessionData[0].sessionId
+      });
+      
+      await AppDataSource.getRepository(Winner).save(
+        newWinner
+      );
+    }
+
+    const updateSessionQuery = `update session set allowBid = 0  where sessionId = ${sessionData[0].sessionId}`;
+    await AppDataSource.query(updateSessionQuery);
+
+    // create new session
+    const newSession = AppDataSource.getRepository(Session).create({
+      sessionStartTime: new Date(),
+      sessionEndTime: new Date(new Date().getTime() + 60 * 60 * 1000),
+      allowBid: true,
+      sessionId: Math.floor(Math.random() * 100)
+    });
+
+    await AppDataSource.getRepository(Session).save(newSession);
   } catch (err) {
     console.error("Failed to declare winner", err);
-  }
-};
-
-async function storeSessionData(): Promise<void> {
-  try {
-    console.log("in session ");
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-    const allowBid = true;
-    let sessionid = Math.floor(Math.random() * 100);
-
-    const session = AppDataSource.getRepository(Session).create({
-      sessionStartTime: startTime,
-      sessionEndTime: endTime,
-      allowBid: allowBid,
-      seesionId: sessionid,
-    });
-    const test = await AppDataSource.getRepository(Session).save(session);
-    console.log("Session data saved:", session);
-    console.log("done", test);
-
-    console.log("Session data storage initialized.");
-  } catch (error) {
-    console.log("An error occurred:", error);
   }
 }
 
 export const cronjob = cron.schedule("*/1 * * * *", async () => {
-  //    console.log("cronjob called")
-  //    console.log("crone called at ", new Date().toUTCString());
-  //  await winnningCard();
-  //  await storeSessionData();
-  //   await checkAndStoreWinner();
+  console.log("cronjob called")
+  console.log("crone called at new ", new Date().toUTCString());
+  await commonSessionManage()
 });
 
 export default CardController;

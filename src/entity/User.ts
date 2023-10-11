@@ -36,7 +36,7 @@ export class User {
   @IsNotEmpty({ message: "The password is required" })
   passwordHash: string;
 
-  @Column({ default: true })
+  @Column({ default: 1 })
   isActive: boolean;
 
   @Column({ type: "bigint", nullable: true })

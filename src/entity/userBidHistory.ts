@@ -14,9 +14,6 @@ export class UserBidHistory {
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   date: Date;
 
-  @Column()
-  bidStatus: boolean;
-
   @Column({ type: "text" })
   bidCard: string;
 }
