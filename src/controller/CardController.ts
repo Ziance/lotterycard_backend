@@ -368,7 +368,7 @@ function getRandomCard(): string {
   const randomSuit = suits[Math.floor(Math.random() * suits.length)];
   const randomValue = values[Math.floor(Math.random() * values.length)];
 
-  return "ACE_OF_CLUBS";
+  // return "ACE_OF_CLUBS";
   return `${randomValue}_OF_${randomSuit}`;
 }
 
