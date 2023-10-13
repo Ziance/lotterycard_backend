@@ -242,7 +242,7 @@ class CardController {
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
-    const myQuery = `SELECT ub.id,ub.date,ub.bidCard,wc.winnerCard FROM user_bid_history ub LEFT JOIN winning_card wc ON ub.sessionId = wc.sessionId WHERE ub.userId = ${userId}`
+    const myQuery = `SELECT ub.id,ub.date,ub.bidCard,wc.winnerCard FROM user_bid_history ub LEFT JOIN winning_card wc ON ub.sessionId = wc.sessionId WHERE ub.userId = ${userId} GROUP BY ub.id ORDER BY ub.date DESC `
     const response = await AppDataSource.query(myQuery);
 
     if (response.length) {
