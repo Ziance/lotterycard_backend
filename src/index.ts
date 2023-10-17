@@ -4,7 +4,8 @@ import AppDataSource from "./ormconfig";
 import { routes as apiRoutes } from "./routes/index";
 import bodyParser from "body-parser";
 import { cronjob } from "./controller/CardController";
-
+import path from "path";
+import serveIndex from 'serve-index';
 
 // establish database connection
 AppDataSource.initialize()
@@ -22,6 +23,8 @@ app.use(cors({ origin: "*" }));
 app.use("/", apiRoutes);
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, '../', 'public')));
+app.use('/ftp', express.static('public'), serveIndex('public', {icons: true}));
 cronjob.start();
 
 // start express server

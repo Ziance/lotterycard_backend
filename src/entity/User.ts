@@ -33,7 +33,7 @@ export class User {
   email!: string;
 
   @Column()
-  @IsNotEmpty({ message: "The password is required" })
+  // @IsNotEmpty({ message: "The password is required" })
   passwordHash: string;
 
   @Column({ default: 1 })
@@ -66,4 +66,8 @@ export class User {
 
   @Column({nullable: true, default: 0})
   retryCount?: number;
+
+
+  @Column({ type: "varchar", length: 200 })
+  file: string;
 }

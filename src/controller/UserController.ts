@@ -43,22 +43,31 @@ class UserController {
   };
 
 
-  public static addUser = async (req: Request, res: Response, next: any) => {
+  public static addUser = async (req: any, res: Response, next: any) => {
+    console.log("request", req);
+    let serverBaseUrl = ""
+
     try {
+
+      // if (req && req?.file) {
+      //   console.log('file--> ', req?.file);
+      //   serverBaseUrl = `http://localhost:${process.env.DB_PORT}/ftp/uploads/`;
+
+      // }
       const {
         firstName,
-        lastName, 
+        lastName,
         phone,
         userName,
         email,
-        address,
+        // address,
         password
       } = req.body;
       const hashPassword = await hashText(password);
       const userRepository = AppDataSource.getRepository(User);
       const userExists = await userRepository.find({
         where: {
-          userName: userName.trim(),
+          userName: userName?.trim(),
           isDeleted: false
         }
       })
@@ -67,16 +76,19 @@ class UserController {
         return res.status(403).json({ message: "User already exists" });
       }
 
+
       const user = AppDataSource.getRepository(User).create({
         firstName: firstName,
         lastName: lastName,
         phone: phone,
         userName: userName.trim(),
         email: email,
-        address: address,
+        // address: address,
         passwordHash: hashPassword,
-        credits: 53
+        credits: 53,
+        // file: (serverBaseUrl + req?.file?.filename)
       });
+      console.log("userwwwwwwww", user);
 
       const results = await AppDataSource.getRepository(User).save(user);
       //await sendEmail(email, "Welcome To lottery", "Welcome to lottery, continue using our application.");
@@ -86,38 +98,72 @@ class UserController {
     }
   };
 
-public static updateUser = async (req: Request, res: Response) => {
-  console.log("updateUser : " , req)
-  
-    const userId = await AppDataSource.getRepository(User).findOne({
-      where: {
-        userId: req.params.userId,
-      },
-    });
-    if (!userId) {
-      return res.status(401).json(Template.userNotFound());
-    }
-    await AppDataSource.getRepository(User)
-      .createQueryBuilder()
-      .update(User)
-      .set({
-        ...req.body,
-        // updatedBy: res.locals.jwt.userId,
-      })
-      .where("userId = :userId", { userId: req.params.userId })
-      .execute();
-    const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.find({
-      where: {
-        userId: req.params.userId,
-        isDeleted: false
+  private static _updateUser = async (req: any, res: Response) => {
+    console.log("updateUser : ", req.body);
+    try {
+      let serverBaseUrl = "";
+      if (req && req?.file) {
+        console.log('file--> ', req?.file);
+        serverBaseUrl = `http://localhost:${process.env.DB_PORT}/ftp/uploads/`;
       }
-    })
-    if (user.length) {
-      return res.json(Template.success("Users Updated succesfully", user));
+      const userId = await AppDataSource.getRepository(User).findOne({
+        where: {
+          userId: req.params.userId,
+        },
+      });
+      console.log("user id", userId);
+
+      if (!userId) {
+        return res.status(401).json(Template.userNotFound());
+      }
+      // req.body['file'] =
+      // console.log("req.body['file']", req.body['file']);
+
+
+      let tempData = req.body;
+      tempData['file'] = serverBaseUrl + req?.file?.filename;
+      // .set(...tempData)
+      console.log("request. body", tempData);
+      await AppDataSource.getRepository(User)
+        .createQueryBuilder()
+        .update(User)
+        .set(
+          // ...req.body,
+         { ...tempData}
+          // updatedBy: res.locals.jwt.userId,
+        )
+        .where("userId = :userId", { userId: req.params.userId })
+        .execute();
+
+      console.log("new loggggg");
+
+      const userRepository = AppDataSource.getRepository(User);
+      console.log("user repo", userRepository);
+
+      const user = await userRepository.find({
+        where: {
+          userId: req.params.userId,
+          isDeleted: false
+        }
+      });
+      console.log("user", user);
+
+      if (user.length) {
+        return res.json(Template.success("Users Updated succesfully", user));
+      }
+      return res.status(401).json(Template.userNotFound());
+    } catch (error) {
+      console.log("error", error);
+
     }
-    return res.status(401).json(Template.userNotFound());
+
   };
+  public static get updateUser() {
+    return UserController._updateUser;
+  }
+  public static set updateUser(value) {
+    UserController._updateUser = value;
+  }
 
 
   public static deleteUser = async (req: Request, res: Response) => {

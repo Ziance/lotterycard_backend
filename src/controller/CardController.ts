@@ -10,6 +10,7 @@ import { Session } from "../entity/Session";
 import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
 import { Cards } from "../entity/Cards";
+import { totalCards } from "../helper/card-data";
 class CardController {
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
@@ -238,6 +239,17 @@ class CardController {
   };
 
 
+  public static getCurrentSessionBids = async (req: Request, res: Response) => {
+    const myQuery = `SELECT bidCard,COUNT(*) AS bidCount FROM bid WHERE sessionId = (SELECT sessionId FROM session ORDER BY sessionEndTime DESC LIMIT 1) GROUP BY bidCard`
+    const response = await AppDataSource.query(myQuery);
+
+    if (response.length) {
+      res.status(200).json({ bids: response });
+    } else {
+      res.json({ message: "no data available" });
+    }
+  };
+
 
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
@@ -265,112 +277,30 @@ class CardController {
     }
   };
 
-  public static manuallySessionCalledTest = async (
-    req: Request,
-    res: Response
-  ) => {
-    try {
-      const sessionRepository = AppDataSource.getRepository(Session);
-      const winnerRepository = AppDataSource.getRepository(winningCard);
-
-      const sessionData = await sessionRepository.find();
-      // console.log("sessionData : ", sessionData);
-
-      if (sessionData.length === 0) {
-        console.log("session is not available...");
-        return;
-      }
-
-      const winnerData = await winnerRepository.save(
-        winnerRepository.create({
-          winnerCard: await getRandomCard(),
-          sessionId: sessionData[0].sessionId,
-          created_at: moment().utc().toDate(),
-        })
-      );
-      // console.log("Winning card is Saved ", winnerData);
-
-      const startTime = new Date();
-      // const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-      const endTime = new Date(startTime.getTime() + 60);
-
-      const sessionId = Math.floor(Math.random() * 100);
-
-      const createdSession = await sessionRepository.save(
-        sessionRepository.create({
-          sessionStartTime: startTime,
-          sessionEndTime: endTime,
-          allowBid: true,
-          sessionId: sessionId,
-        })
-      );
-      console.log("createdSession ", createdSession);
-
-      const bidQuery = `SELECT * FROM bid ORDER BY date DESC LIMIT 1`;
-      const bidResult = await AppDataSource.query(bidQuery);
-      if (bidResult.length === 0) {
-        console.log("No bid card found in the database.");
-        return;
-      }
-
-      const winningCardQuery = `SELECT * FROM winning_card ORDER BY created_at DESC LIMIT 1`
-      const winningResult = await AppDataSource.query(winningCardQuery);
-      if (winningResult.length === 0) {
-        console.log(`No winner card found in the database.`);
-        return;
-      }
-
-      const sessionQuery = `SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1`
-      const sessionResult = await AppDataSource.query(sessionQuery);
-      if (sessionResult.length === 0) {
-        console.log(`No session found in the database.`);
-        return;
-      }
-
-      const latestBidCard = bidResult[0];
-      console.log("Latest bid card:", latestBidCard);
-
-      const currrentWinningCard = winningResult[0];
-      console.log("currrentWinningCard : ", currrentWinningCard)
-
-      const currentSessionData = sessionResult[0];
-      console.log("currentSessionData : ", currentSessionData)
-
-      // this is pending
-
-      return res.status(200).json({ message: "manually session check...." });
-    } catch (error) {
-      return res.status(500).json({
-        error: error.message,
-      });
-    }
-  };
 }
 
-function getRandomCard(): string {
-  const suits = ["HEARTS", "DIAMONDS", "CLUBS", "SPADES"];
-  const values = [
-    "ACE",
-    "TWO",
-    "THREE",
-    "FOUR",
-    "FIVE",
-    "SIX",
-    "SEVEN",
-    "EIGHT",
-    "NINE",
-    "TEN",
-    "JACK",
-    "QUEEN",
-    "KING",
-  ];
+async function getRandomCard(): Promise<string> {
+  const myQuery = `SELECT bidCard,COUNT(*) AS bidCount FROM bid WHERE sessionId = (SELECT sessionId FROM session ORDER BY sessionEndTime DESC LIMIT 1) GROUP BY bidCard`
+  const response = await AppDataSource.query(myQuery);
 
-  const randomSuit = suits[Math.floor(Math.random() * suits.length)];
-  const randomValue = values[Math.floor(Math.random() * values.length)];
+  // manage winner card start
+  const totalBidsCards = []
+  totalCards.map((bidCard: any) => {
+    const isBidCard = response.find((item: any) => item.bidCard === bidCard)
+    totalBidsCards.push({
+      bidCard: bidCard,
+      bidCount: Number(isBidCard?.bidCount) || 0
+    })
+  })
 
-  // return "ACE_OF_CLUBS";
-  return `${randomValue}_OF_${randomSuit}`;
+  const minBidCount = Math.min(...totalBidsCards.map(item => item.bidCount));
+  const minBidTotalCards = [...totalBidsCards].filter((item: any) => item.bidCount === minBidCount)?.map((item) => (item.bidCard))
+  const randomIndex = Math.floor(Math.random() * minBidTotalCards.length);
+
+  console.log("random selected card is ", minBidTotalCards[randomIndex] || minBidTotalCards[0])
+  return minBidTotalCards[randomIndex] || minBidTotalCards[0] || ""
 }
+
 
 async function commonSessionManage(): Promise<void> {
   try {
@@ -388,8 +318,10 @@ async function commonSessionManage(): Promise<void> {
     }
 
     const randomWinningCard = await getRandomCard()
+    console.log("session randomWinningCard : ", randomWinningCard)
+
     const winnerUserData = await totalBids.find((item) => item.bidCard === randomWinningCard)
-  
+
     // insert winner to db
     const winnerRepository = AppDataSource.getRepository(winningCard);
     const data = winnerRepository.create({
@@ -398,9 +330,7 @@ async function commonSessionManage(): Promise<void> {
       created_at: moment().utc().toDate(),
     });
 
-    const newWinnerCard = await AppDataSource.getRepository(winningCard).save(
-      data
-    );
+    await AppDataSource.getRepository(winningCard).save(data);
 
     if (winnerUserData) {
       const newWinner = AppDataSource.getRepository(Winner).create({
@@ -409,7 +339,7 @@ async function commonSessionManage(): Promise<void> {
         created_at: moment().utc().toDate(),
         sessionId: sessionData[0].sessionId
       });
-      
+
       await AppDataSource.getRepository(Winner).save(
         newWinner
       );
@@ -432,8 +362,9 @@ async function commonSessionManage(): Promise<void> {
   }
 }
 
-export const cronjob = cron.schedule("*/1 * * * *", async () => {
-  console.log("cronjob called")
+
+export const cronjob = cron.schedule("*/5 * * * *", async () => {
+  console.log("cronjob called in every 5 mins")
   console.log("crone called at new ", new Date().toUTCString());
   await commonSessionManage()
 });
