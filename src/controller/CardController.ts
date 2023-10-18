@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import AppDataSource from "../ormconfig";
 import { Bid } from "../entity/Bid";
+import { ComboBids } from "../entity/ComboBids";
 import moment from "moment";
 import Template from "../response/index";
 import { User } from "../entity/User";
@@ -11,7 +12,74 @@ import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
 import { Cards } from "../entity/Cards";
 import { totalCards } from "../helper/card-data";
+
 class CardController {
+  public static placeBidCombo = async (req: Request, res: Response) => {
+    const { spadesBidCard , diamondBidCard , clubsBidCard , heartsBidCard } = req.body
+    const userId = req.params.userId;
+    if (!userId || !spadesBidCard || !diamondBidCard || !clubsBidCard || !heartsBidCard) {
+      return res.status(400).json({ error: "some parameter is missing" });
+    }
+    try {
+      const existingUser = AppDataSource.getRepository(User);
+      const userData = await existingUser.findOne({
+        where: {
+          userId: userId,
+        },
+      });
+      console.log("existing user...", userData);
+      if (!userData) {
+        return res.status(401).json(Template.userNotFound());
+      }
+      if (userData.credits === 0) {
+        return res.status(403).json({ error: "Insufficient credits" });
+      }
+      const sessionCheck = await AppDataSource.query(
+        "SELECT * FROM session ORDER BY sessionEndTime DESC LIMIT 1"
+      );
+      if (
+        sessionCheck.length === 0 ||
+        (sessionCheck.length && sessionCheck[0].allowBid === 0)
+      ) {
+        return res.status(401).json({
+          message: "bidding are close",
+        });
+      }
+      const addBidsRecord = AppDataSource.getRepository(ComboBids);
+      const bidData = await addBidsRecord.findOne({
+        where: {
+          userId: userId,
+          sessionId: sessionCheck[0].sessionId,
+        },
+      });
+
+      if (bidData) {
+        return res.status(409).json({
+          message: "You have alredy placed the bid wait for the results",
+        });
+      }
+
+      const createComboBids = await AppDataSource.getRepository(ComboBids).create();
+      createComboBids.userId = userId;
+      createComboBids.date = moment().utc().toDate();
+      createComboBids.spadesBidCard = spadesBidCard;
+      createComboBids.diamondBidCard = diamondBidCard;
+      createComboBids.clubsBidCard = clubsBidCard;
+      createComboBids.heartsBidCard = heartsBidCard;
+      createComboBids.sessionId = sessionCheck[0].sessionId;
+      await AppDataSource.getRepository(ComboBids).save(createComboBids);
+      userData.credits -= 1;
+      await AppDataSource.getRepository(User).save(userData);
+
+      return res.status(200).json({
+        message: "Bid placed successfully",
+        newCredit: userData.credits,
+      });
+    } catch (error) {
+      console.error("Failed to place bid:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  };
   public static placebid = async (req: Request, res: Response) => {
     const user = req.params.userId;
     if (!user) {
@@ -251,6 +319,17 @@ class CardController {
   };
 
 
+  public static getUserComboBidHistory = async (req: Request, res: Response) => {
+    const { userId } = req.params;
+    const myQuery = `SELECT ub.id,ub.date,ub.spadesBidCard,ub.diamondBidCard,ub.clubsBidCard,ub.heartsBidCard FROM combo_bids ub WHERE ub.userId = 4 GROUP BY ub.id ORDER BY ub.date DESC`
+    const response = await AppDataSource.query(myQuery);
+    if (response.length) {
+      res.status(200).json({ history: response });
+    } else {
+      res.json({ message: "no data available" });
+    }
+  };
+
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
@@ -363,7 +442,7 @@ async function commonSessionManage(): Promise<void> {
 }
 
 
-export const cronjob = cron.schedule("*/5 * * * *", async () => {
+export const cronjob = cron.schedule("*/60 * * * *", async () => {
   console.log("cronjob called in every 5 mins")
   console.log("crone called at new ", new Date().toUTCString());
   await commonSessionManage()
