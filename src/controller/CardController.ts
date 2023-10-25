@@ -10,12 +10,13 @@ import { Winner } from "../entity/winner";
 import { Session } from "../entity/Session";
 import { UserBidHistory } from "../entity/userBidHistory";
 import { winningCard } from "../entity/winningCard";
+import { comboWinningCard } from "../entity/comboWinningCard";
 import { Cards } from "../entity/Cards";
 import { totalCards } from "../helper/card-data";
 
 class CardController {
   public static placeBidCombo = async (req: Request, res: Response) => {
-    const { spadesBidCard , diamondBidCard , clubsBidCard , heartsBidCard } = req.body
+    const { spadesBidCard, diamondBidCard, clubsBidCard, heartsBidCard } = req.body
     const userId = req.params.userId;
     if (!userId || !spadesBidCard || !diamondBidCard || !clubsBidCard || !heartsBidCard) {
       return res.status(400).json({ error: "some parameter is missing" });
@@ -213,6 +214,9 @@ class CardController {
       return res.status(500).json({ error: "Internal server error" });
     }
   };
+
+
+
   public static changeCards = async (req: Request, res: Response) => {
     const userid = req.params.userId;
     if (!userid) {
@@ -247,6 +251,9 @@ class CardController {
       });
     }
   };
+
+
+
   public static getBid = async (req: Request, res: Response) => {
     try {
       const bidRepository = AppDataSource.getRepository(Bid);
@@ -279,6 +286,7 @@ class CardController {
             "Winner is not declare yet try after some time or No winner found",
         });
       }
+
       return res.status(200).json({
         message: "Winner data is",
         data,
@@ -321,8 +329,25 @@ class CardController {
 
   public static getUserComboBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
-    const myQuery = `SELECT ub.id,ub.date,ub.spadesBidCard,ub.diamondBidCard,ub.clubsBidCard,ub.heartsBidCard FROM combo_bids ub WHERE ub.userId = 4 GROUP BY ub.id ORDER BY ub.date DESC`
+    const myQuery = `SELECT 
+    ub.sessionId,
+    ub.id,
+    ub.date,
+    ub.spadesBidCard,
+    ub.diamondBidCard,
+    ub.clubsBidCard,
+    ub.heartsBidCard,
+    wc.spadesBidCard as spadesBidWinnerCard,
+    wc.diamondBidCard as diamondBidWinnerCard,
+    wc.clubsBidCard as clubsBidWinnerCard,
+    wc.heartsBidCard as heartsBidWinnerCard
+    FROM combo_bids ub
+    LEFT JOIN combo_winning_card wc ON ub.sessionId = wc.sessionId 
+    GROUP BY ub.id ORDER BY ub.date DESC`
+    // WHERE ub.userId = ${userId}
+
     const response = await AppDataSource.query(myQuery);
+    console.log("response new : " , response)
     if (response.length) {
       res.status(200).json({ history: response });
     } else {
@@ -333,7 +358,7 @@ class CardController {
   public static getUserBidHistory = async (req: Request, res: Response) => {
     const { userId } = req.params;
 
-    const myQuery = `SELECT ub.id,ub.date,ub.bidCard,wc.winnerCard FROM user_bid_history ub LEFT JOIN winning_card wc ON ub.sessionId = wc.sessionId WHERE ub.userId = ${userId} GROUP BY ub.id ORDER BY ub.date DESC `
+    const myQuery = `SELECT ub.id,ub.date,ub.bidCard,wc.winnerCard FROM user_bid_history ub LEFT JOIN winning_card wc ON ub.sessionId = wc.sessionId WHERE ub.userId = ${userId} GROUP BY ub.id ORDER BY ub.date DESC`
     const response = await AppDataSource.query(myQuery);
 
     if (response.length) {
@@ -357,6 +382,35 @@ class CardController {
   };
 
 }
+
+async function getRandomComboBidCard(cardName, cardShortName): Promise<string> {
+  const myQuery = `SELECT
+  ${cardName} as bidCard,
+  COUNT(*) AS bidCount
+  FROM combo_bids WHERE sessionId = (SELECT sessionId FROM session ORDER BY sessionEndTime DESC LIMIT 1) GROUP BY ${cardName}`
+  console.log("myQuery : ", myQuery)
+
+  const response = await AppDataSource.query(myQuery);
+  console.log("response : ", response)
+  // manage winner card start
+  const totalBidsCards = []
+  const filteredCards = [...totalCards].filter((item: any) => item.includes(cardShortName))
+  console.log("cardShortName : ", cardShortName)
+  console.log("filteredCards : ", filteredCards)
+  filteredCards.map((bidCard: any) => {
+    const isBidCard = response.find((item: any) => item.bidCard === bidCard)
+    totalBidsCards.push({
+      bidCard: bidCard,
+      bidCount: Number(isBidCard?.bidCount) || 0
+    })
+  })
+  const minBidCount = Math.min(...totalBidsCards.map(item => item.bidCount));
+  const minBidTotalCards = [...totalBidsCards].filter((item: any) => item.bidCount === minBidCount)?.map((item) => (item.bidCard))
+  const randomIndex = Math.floor(Math.random() * minBidTotalCards.length);
+  console.log("random selected card is ", minBidTotalCards[randomIndex] || minBidTotalCards[0])
+  return minBidTotalCards[randomIndex] || minBidTotalCards[0] || ""
+}
+
 
 async function getRandomCard(): Promise<string> {
   const myQuery = `SELECT bidCard,COUNT(*) AS bidCount FROM bid WHERE sessionId = (SELECT sessionId FROM session ORDER BY sessionEndTime DESC LIMIT 1) GROUP BY bidCard`
@@ -393,36 +447,54 @@ async function commonSessionManage(): Promise<void> {
     const totalBids = await AppDataSource.query(`SELECT * FROM bid WHERE sessionId = ${sessionData[0].sessionId}`);
     if (totalBids.length === 0) {
       console.log("No bid card found in the database.");
-      return;
+
+      // single bid start
+      const randomWinningCard = await getRandomCard()
+      const winnerUserData = await totalBids.find((item) => item.bidCard === randomWinningCard)
+      // insert winner to db
+      const winnerRepository = AppDataSource.getRepository(winningCard);
+      const data = winnerRepository.create({
+        winnerCard: randomWinningCard,
+        sessionId: sessionData[0].sessionId,
+        created_at: moment().utc().toDate(),
+      });
+
+      await AppDataSource.getRepository(winningCard).save(data);
+
+      if (winnerUserData) {
+        const newWinner = AppDataSource.getRepository(Winner).create({
+          userId: winnerUserData.userId,
+          winnerBidCard: randomWinningCard,
+          created_at: moment().utc().toDate(),
+          sessionId: sessionData[0].sessionId
+        });
+
+        await AppDataSource.getRepository(Winner).save(
+          newWinner
+        );
+      }
+      // single bid end
     }
 
-    const randomWinningCard = await getRandomCard()
-    console.log("session randomWinningCard : ", randomWinningCard)
 
-    const winnerUserData = await totalBids.find((item) => item.bidCard === randomWinningCard)
+    // combo bid start
+    const spadesRandomCard = await getRandomComboBidCard("spadesBidCard", "SPADES")
+    const diamondRandomCard = await getRandomComboBidCard("diamondBidCard", "DIAMOND")
+    const clubsRandomCard = await getRandomComboBidCard("clubsBidCard", "CLUBS")
+    const heartsRandomCard = await getRandomComboBidCard("heartsBidCard", "HEARTS")
 
-    // insert winner to db
-    const winnerRepository = AppDataSource.getRepository(winningCard);
-    const data = winnerRepository.create({
-      winnerCard: randomWinningCard,
+    const comboWinnerRepository = AppDataSource.getRepository(comboWinningCard);
+    const comboData = comboWinnerRepository.create({
+      spadesBidCard: spadesRandomCard,
+      diamondBidCard: diamondRandomCard,
+      clubsBidCard: clubsRandomCard,
+      heartsBidCard: heartsRandomCard,
       sessionId: sessionData[0].sessionId,
       created_at: moment().utc().toDate(),
     });
 
-    await AppDataSource.getRepository(winningCard).save(data);
-
-    if (winnerUserData) {
-      const newWinner = AppDataSource.getRepository(Winner).create({
-        userId: winnerUserData.userId,
-        winnerBidCard: randomWinningCard,
-        created_at: moment().utc().toDate(),
-        sessionId: sessionData[0].sessionId
-      });
-
-      await AppDataSource.getRepository(Winner).save(
-        newWinner
-      );
-    }
+    const newtest = await AppDataSource.getRepository(comboWinningCard).save(comboData);
+    // combo bid end
 
     const updateSessionQuery = `update session set allowBid = 0  where sessionId = ${sessionData[0].sessionId}`;
     await AppDataSource.query(updateSessionQuery);
@@ -442,7 +514,7 @@ async function commonSessionManage(): Promise<void> {
 }
 
 
-export const cronjob = cron.schedule("*/60 * * * *", async () => {
+export const cronjob = cron.schedule("*/1 * * * *", async () => {
   console.log("cronjob called in every 5 mins")
   console.log("crone called at new ", new Date().toUTCString());
   await commonSessionManage()
