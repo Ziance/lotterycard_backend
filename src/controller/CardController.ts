@@ -297,9 +297,21 @@ class CardController {
     }
   };
 
+  public static getComboWinnersCardList = async (req: Request, res: Response) => {
+    try {
+      const comboWinnerRepository = AppDataSource.getRepository(comboWinningCard);
+      const data = await comboWinnerRepository.find();
 
+      return res.status(200).json({
+        message: "combo Winner Cards list",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
 
-
+  
   public static getWinnersCardList = async (req: Request, res: Response) => {
     try {
       const winnerRepository = AppDataSource.getRepository(winningCard);
@@ -514,7 +526,7 @@ async function commonSessionManage(): Promise<void> {
 }
 
 
-export const cronjob = cron.schedule("*/1 * * * *", async () => {
+export const cronjob = cron.schedule("*/300 * * * *", async () => {
   console.log("cronjob called in every 5 mins")
   console.log("crone called at new ", new Date().toUTCString());
   await commonSessionManage()

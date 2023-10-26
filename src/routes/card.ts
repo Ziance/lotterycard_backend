@@ -7,6 +7,7 @@ router.post("/combo-placebid/:userId", CardController.placeBidCombo);
 router.post("/placebid/:userId", CardController.placebid);
 router.get("/getAllBids/", CardController.getBid);
 router.get("/winner-cards", CardController.getWinnersCardList);
+router.get("/combo-winner-cards", CardController.getComboWinnersCardList);
 router.get("/winner", CardController.getWinner);
 router.get("/getUserComboBidHistory/:userId", CardController.getUserComboBidHistory);
 router.get("/getUserBidHistory/:userId", CardController.getUserBidHistory);
