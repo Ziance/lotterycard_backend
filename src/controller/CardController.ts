@@ -227,7 +227,7 @@ class CardController {
       const data = await creditdata.findOne({
         where: {
           userId: userid,
-        },
+        }, 
       });
       if (!data) {
         return res.status(404).json({
@@ -526,7 +526,7 @@ async function commonSessionManage(): Promise<void> {
 }
 
 
-export const cronjob = cron.schedule("*/30 * * * *", async () => {
+export const cronjob = cron.schedule("*/6 * * * *", async () => {
   console.log("cronjob called in every 5 mins")
   console.log("crone called at new ", new Date().toUTCString());
   await commonSessionManage()
