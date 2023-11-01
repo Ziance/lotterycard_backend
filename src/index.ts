@@ -1,3 +1,4 @@
+require('dotenv').config()
 const cors = require("cors");
 import express from "express";
 import AppDataSource from "./ormconfig";
@@ -30,6 +31,8 @@ cronjob.start();
 app.get("/" , (req , res)=>{
   res.send("lottery service working..")
 })
+
+console.log("process.env.NODE_DOCKER_PORT : " , process.env.NODE_DOCKER_PORT)
 // start express server
 const PORT = Number(process.env.NODE_DOCKER_PORT) || 3001;
 app.listen(PORT, () => {
