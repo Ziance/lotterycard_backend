@@ -8,13 +8,13 @@ import path from "path";
 import serveIndex from 'serve-index';
 
 // establish database connection
-AppDataSource.initialize()
-  .then(() => {
-    console.log("Data Source has been initialized!");
-  })
-  .catch((err) => {
-    console.error("Error during Data Source initialization:", err);
-  });
+// AppDataSource.initialize()
+//   .then(() => {
+//     console.log("Data Source has been initialized!");
+//   })
+//   .catch((err) => {
+//     console.error("Error during Data Source initialization:", err);
+//   });
 
 // create and setup express app
 const app = express();
@@ -27,6 +27,9 @@ app.use(express.static(path.join(__dirname, '../', 'public')));
 app.use('/ftp', express.static('public'), serveIndex('public', {icons: true}));
 cronjob.start();
 
+app.get("/" , (req , res)=>{
+  res.send("lottery service working..")
+})
 // start express server
 const PORT = Number(process.env.NODE_DOCKER_PORT) || 3001;
 app.listen(PORT, () => {
