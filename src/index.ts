@@ -9,13 +9,13 @@ import path from "path";
 import serveIndex from 'serve-index';
 
 // establish database connection
-// AppDataSource.initialize()
-//   .then(() => {
-//     console.log("Data Source has been initialized!");
-//   })
-//   .catch((err) => {
-//     console.error("Error during Data Source initialization:", err);
-//   });
+AppDataSource.initialize()
+  .then(() => {
+    console.log("Data Source has been initialized!");
+  })
+  .catch((err) => {
+    console.error("Error during Data Source initialization:", err);
+  });
 
 // create and setup express app
 const app = express();
