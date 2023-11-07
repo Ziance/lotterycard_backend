@@ -2,7 +2,7 @@ name: Deploy BetterHomes Backend
 on:
   push:
     branches:
-      - server-dev
+      - develop
 
 jobs:
   build:
