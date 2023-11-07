@@ -1,0 +1,30 @@
+name: Deploy BetterHomes Backend
+on:
+  push:
+    branches:
+      - server-dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v2
+        - run: docker login -u urvish91 -p dckr_pat_TqpSOirk7Z-S21Qe4E8mAcyaN7M
+        - run: docker build -t urvish91/lotterycard_backend .
+        - run: docker push urvish91/lotterycard_backend
+
+        - name: Generate deployment package
+          run: zip -r deploy.zip . -x '*.git*'
+
+        - name: Deploy to EB
+          uses: einaregilsson/beanstalk-deploy@v18
+          with:
+            use_existing_version_if_available: true
+            aws_access_key: AKIAVFMBOUCQRHZPSCMN
+            aws_secret_key: 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
+            application_name: lottery
+            environment_name: Lottery-env
+            existing_bucket_name: elasticbeanstalk-ap-south-1-355143164065
+            region: ap-south-1
+            version_label: ${{ github.sha }}
+            deployment_package: deploy.zip
